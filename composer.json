@@ -1,0 +1,13 @@
+{
+    "name": "sitegeist/magicwand",
+    "type": "typo3-flow-package",
+    "description": "Tools that make the Flow/Neos development easier",
+    "require": {
+        "typo3/flow": "*"
+    },
+    "autoload": {
+        "psr-0": {
+            "Sitegeist\\MagicWand": "Classes"
+        }
+    }
+}
