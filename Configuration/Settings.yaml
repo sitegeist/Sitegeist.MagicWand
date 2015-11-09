@@ -1,0 +1,9 @@
+Sitegeist:
+  MagicWand:
+    clonePresets:
+#      master:
+#        hostname: ~
+#        username: ~
+#        port: ~
+#        path: ~
+#        context: Production
