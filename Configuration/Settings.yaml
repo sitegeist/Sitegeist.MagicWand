@@ -1,6 +1,6 @@
-Sitegeist:
-  MagicWand:
-    clonePresets:
+#Sitegeist:
+#  MagicWand:
+#    clonePresets: []
 #      master:
 #        host: ~
 #        user: ~
