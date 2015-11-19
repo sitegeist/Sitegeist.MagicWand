@@ -1,9 +1,15 @@
-#Sitegeist:
-#  MagicWand:
-#    clonePresets: []
-#      master:
+Sitegeist:
+  MagicWand:
+    clonePresets: []
+#      # the name of the preset for referencing on the clone:preset command
+#      master: 
+#        # hostname or ip of the server to clone from
 #        host: ~
+#        # ssh username 
 #        user: ~
+#        # ssh port
 #        port: ~
+#        # path on the remote server
 #        path: ~
+#        # flow-context on the remote server  
 #        context: Production
