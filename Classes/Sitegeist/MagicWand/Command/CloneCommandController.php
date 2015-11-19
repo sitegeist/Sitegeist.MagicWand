@@ -52,17 +52,19 @@ class CloneCommandController extends \TYPO3\Flow\Cli\CommandController {
 	/**
 	 * Clone a flow setup as specified in Settings.yaml (Sitegeist.MagicWand.clonePresets ...)
 	 *
-	 * @param string $presetName
+	 * @param string $presetName name of the preset from the settings
+	 * @param boolean $yes confirm execution without further input
 	 */
-	public function presetCommand($presetName) {
+	public function presetCommand($presetName, $yes = FALSE) {
 		if ($this->clonePresets && array_key_exists($presetName, $this->clonePresets)) {
 			$this->outputLine('Clone by preset ' . $presetName);
 			$this->remoteHostCommand(
 				$this->clonePresets[$presetName]['host'],
 				$this->clonePresets[$presetName]['user'],
-				$this->clonePresets[$presetName]['path'],
 				$this->clonePresets[$presetName]['port'],
-				$this->clonePresets[$presetName]['context']
+				$this->clonePresets[$presetName]['path'],
+				$this->clonePresets[$presetName]['context'],
+				$yes
 			);
 		} else {
 			$this->outputLine('The preset ' . $presetName . ' was not found!');
@@ -73,13 +75,14 @@ class CloneCommandController extends \TYPO3\Flow\Cli\CommandController {
 	/**
 	 * Clone a Flow Setup via detailed hostname
 	 *
-	 * @param string $host
-	 * @param string $user
-	 * @param string $path
-	 * @param string $port
-	 * @param string $context
+	 * @param string $host ssh host
+	 * @param string $user ssh user
+	 * @param string $port ssh port
+	 * @param string $path path on the remote server
+	 * @param string $context flow_context on the remote server
+	 * @param boolean $yes confirm execution without further input
 	 */
-	public function remoteHostCommand($host, $user, $path, $port=22, $context='Production') {
+	public function remoteHostCommand($host, $user, $port, $path, $context='Production', $yes=FALSE) {
 		// read local configuration
 		$localPersistenceConfiguration = $this->configurationManager->getConfiguration('Settings', 'TYPO3.Flow.persistence.backendOptions');
 		$localDataPersistentPath = FLOW_PATH_ROOT . 'Data/Persistent';
@@ -97,15 +100,17 @@ class CloneCommandController extends \TYPO3\Flow\Cli\CommandController {
 		# Are you sure? #
 		#################
 
-		$this->outputLine( "Are you sure you want to do this?  Type 'yes' to continue: ");
-		$handle = fopen ("php://stdin","r");
-		$line = fgets($handle);
-		if(trim($line) != 'yes'){
-			$this->outputLine('exit');
-			$this->quit(1);
-		} else {
-			$this->outputLine();
-			$this->outputLine();
+		if (!$yes) {
+			$this->outputLine("Are you sure you want to do this?  Type 'yes' to continue: ");
+			$handle = fopen("php://stdin", "r");
+			$line = fgets($handle);
+			if (trim($line) != 'yes') {
+				$this->outputLine('exit');
+				$this->quit(1);
+			} else {
+				$this->outputLine();
+				$this->outputLine();
+			}
 		}
 
 		#######################
