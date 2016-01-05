@@ -54,9 +54,9 @@ class CloneCommandController extends \TYPO3\Flow\Cli\CommandController {
 	 *
 	 * @param string $presetName name of the preset from the settings
 	 * @param boolean $yes confirm execution without further input
-	 * @param boolean $noDbDrop skip dropping of database during sync
+	 * @param boolean $keepDb skip dropping of database during sync
 	 */
-	public function presetCommand($presetName, $yes = FALSE, $noDbDrop=FALSE) {
+	public function presetCommand($presetName, $yes = FALSE, $keepDb=FALSE) {
 		if ($this->clonePresets && array_key_exists($presetName, $this->clonePresets)) {
 			$this->outputLine('Clone by preset ' . $presetName);
 			$this->remoteHostCommand(
@@ -66,7 +66,7 @@ class CloneCommandController extends \TYPO3\Flow\Cli\CommandController {
 				$this->clonePresets[$presetName]['path'],
 				$this->clonePresets[$presetName]['context'],
 				$yes,
-				$noDbDrop
+				$keepDb
 			);
 		} else {
 			$this->outputLine('The preset ' . $presetName . ' was not found!');
@@ -83,9 +83,9 @@ class CloneCommandController extends \TYPO3\Flow\Cli\CommandController {
 	 * @param string $path path on the remote server
 	 * @param string $context flow_context on the remote server
 	 * @param boolean $yes confirm execution without further input
-	 * @param boolean $noDbDrop skip dropping of database during sync
+	 * @param boolean $keepDb skip dropping of database during sync
 	 */
-	public function remoteHostCommand($host, $user, $port, $path, $context='Production', $yes=FALSE, $noDbDrop=FALSE) {
+	public function remoteHostCommand($host, $user, $port, $path, $context='Production', $yes=FALSE, $keepDb=FALSE) {
 		// read local configuration
 		$localPersistenceConfiguration = $this->configurationManager->getConfiguration('Settings', 'TYPO3.Flow.persistence.backendOptions');
 		$localDataPersistentPath = FLOW_PATH_ROOT . 'Data/Persistent';
@@ -135,7 +135,7 @@ class CloneCommandController extends \TYPO3\Flow\Cli\CommandController {
 		# Drop and Recreate DB #
 		########################
 
-		if ($noDbDrop == FALSE) {
+		if ($keepDb == FALSE) {
 			$this->outputHeadLine('2. Drop and Recreate DB');
 
 			$emptyLocalDbSql = 'DROP DATABASE ' . $localPersistenceConfiguration['dbname'] . '; CREATE DATABASE ' . $localPersistenceConfiguration['dbname'] . ';';
