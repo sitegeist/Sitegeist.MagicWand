@@ -100,9 +100,10 @@ class StashCommandController extends CommandController
      * Restores the last anonymous stash entry
      *
      * @param boolean $yes confirm execution without further input
+     * @param boolean $keepDb skip dropping of database during sync
      * @return void
      */
-    public function popCommand($yes = false)
+    public function popCommand($yes = false, $keepDb = false)
     {
         $basePath = sprintf(FLOW_PATH_ROOT . 'Data/MagicWandStash/anonymous');
 
@@ -124,7 +125,7 @@ class StashCommandController extends CommandController
             return filemtime($b) - filemtime($a);
         });
 
-        $this->restoreStashEntry($entries[0], basename($entries[0]), $yes, false);
+        $this->restoreStashEntry($entries[0], basename($entries[0]), $yes, false, $keepDb);
     }
 
     /**
@@ -217,12 +218,13 @@ class StashCommandController extends CommandController
      *
      * @param string $name The name of the stash entry that will be restored
      * @param boolean $yes confirm execution without further input
+     * @param boolean $keepDb skip dropping of database during sync
      * @return void
      */
-    public function restoreCommand($name, $yes = false)
+    public function restoreCommand($name, $yes = false, $keepDb = false)
     {
         $basePath = sprintf(FLOW_PATH_ROOT . 'Data/MagicWandStash/named/%s', $name);
-        $this->restoreStashEntry($basePath, $name, $yes);
+        $this->restoreStashEntry($basePath, $name, $yes, true, $keepDb);
     }
 
     /**
@@ -265,9 +267,10 @@ class StashCommandController extends CommandController
      * @param string $source
      * @param string $identifier
      * @param boolean $force
+     * @param boolean $keepDb
      * @return void
      */
-    protected function restoreStashEntry($source, $identifier, $force = false, $preserve = true)
+    protected function restoreStashEntry($source, $identifier, $force = false, $preserve = true, $keepDb = false)
     {
         if (!is_dir($source)) {
             $this->outputLine('<error>%s does not exist</error>', [$identifier]);
@@ -298,11 +301,28 @@ class StashCommandController extends CommandController
 
         $this->checkConfiguration();
 
+        ########################
+    		# Drop and Recreate DB #
+    		########################
+
+    		if ($keepDb == false) {
+      			$this->outputHeadLine('2. Drop and Recreate DB');
+
+      			$emptyLocalDbSql = 'DROP DATABASE ' . $this->databaseConfiguration['dbname'] . '; CREATE DATABASE ' . $this->databaseConfiguration['dbname'] . ' collate utf8_unicode_ci;';
+      			$emptyLocalDbCommand = 'echo ' . escapeshellarg($emptyLocalDbSql) . '  | mysql --host=' . $this->databaseConfiguration['host'] . ' --user=' . $this->databaseConfiguration['user'] . ' --password=' . $this->databaseConfiguration['password'];
+
+      			$this->outputLine($emptyLocalDbCommand);
+      			$emptyLocalDbResult = shell_exec($emptyLocalDbCommand);
+      			$this->outputLine($emptyLocalDbResult);
+    		} else {
+    			   $this->outputHeadLine('2. Skipped (Drop and Recreate DB)');
+    		}
+
         ######################
     		#  Restore Database  #
     		######################
 
-        $this->outputHeadLine('2. Restore Database');
+        $this->outputHeadLine('3. Restore Database');
 
         $mysqlImportCommand = sprintf('mysql  --host="%s" --user="%s" --password="%s" %s < %s',
             $this->databaseConfiguration['host'],
@@ -320,7 +340,7 @@ class StashCommandController extends CommandController
     		# Restore Persistent Resources #
     		################################
 
-        $this->outputHeadLine('3. Restore Persistent Resources');
+        $this->outputHeadLine('4. Restore Persistent Resources');
 
         FileUtils::removeDirectoryRecursively(FLOW_PATH_ROOT . 'Data/Persistent');
         FileUtils::copyDirectoryRecursively($source . '/persistent', FLOW_PATH_ROOT . 'Data/Persistent');
@@ -335,7 +355,7 @@ class StashCommandController extends CommandController
     		# Clear Caches #
     		################
 
-    		$this->outputHeadLine('4. Clear Caches');
+    		$this->outputHeadLine('5. Clear Caches');
     		$flushCachesCommand = 'FLOW_CONTEXT=' . $this->bootstrap->getContext() . ' ./flow flow:cache:flush';
     		$this->outputLine($flushCachesCommand);
     		$flushCachesResult = shell_exec($flushCachesCommand);
@@ -345,7 +365,7 @@ class StashCommandController extends CommandController
     		# Migrate DB #
     		##############
 
-    		$this->outputHeadLine('5. Migrate cloned DB');
+    		$this->outputHeadLine('6. Migrate cloned DB');
     		$migrateDbCommand = 'FLOW_CONTEXT=' . $this->bootstrap->getContext() . ' ./flow doctrine:migrate';
     		$this->outputLine($migrateDbCommand);
     		$migrateDbResult = shell_exec($migrateDbCommand);
@@ -355,7 +375,7 @@ class StashCommandController extends CommandController
     		# Publish Resources #
     		#####################
 
-    		$this->outputHeadLine('6. Publish Resources');
+    		$this->outputHeadLine('7. Publish Resources');
     		$publishResourcesCommand = 'FLOW_CONTEXT=' . $this->bootstrap->getContext() . ' ./flow resource:publish';
     		$this->outputLine($publishResourcesCommand);
     		$publishResourcesResult = shell_exec($publishResourcesCommand);
