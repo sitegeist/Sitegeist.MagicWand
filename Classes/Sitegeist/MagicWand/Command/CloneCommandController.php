@@ -54,8 +54,9 @@ class CloneCommandController extends \TYPO3\Flow\Cli\CommandController {
 	 *
 	 * @param string $presetName name of the preset from the settings
 	 * @param boolean $yes confirm execution without further input
+	 * @param boolean $keepDb skip dropping of database during sync
 	 */
-	public function presetCommand($presetName, $yes = FALSE) {
+	public function presetCommand($presetName, $yes = FALSE, $keepDb=FALSE) {
 		if ($this->clonePresets && array_key_exists($presetName, $this->clonePresets)) {
 			$this->outputLine('Clone by preset ' . $presetName);
 			$this->remoteHostCommand(
@@ -64,7 +65,8 @@ class CloneCommandController extends \TYPO3\Flow\Cli\CommandController {
 				$this->clonePresets[$presetName]['port'],
 				$this->clonePresets[$presetName]['path'],
 				$this->clonePresets[$presetName]['context'],
-				$yes
+				$yes,
+				$keepDb
 			);
 		} else {
 			$this->outputLine('The preset ' . $presetName . ' was not found!');
@@ -81,8 +83,9 @@ class CloneCommandController extends \TYPO3\Flow\Cli\CommandController {
 	 * @param string $path path on the remote server
 	 * @param string $context flow_context on the remote server
 	 * @param boolean $yes confirm execution without further input
+	 * @param boolean $keepDb skip dropping of database during sync
 	 */
-	public function remoteHostCommand($host, $user, $port, $path, $context='Production', $yes=FALSE) {
+	public function remoteHostCommand($host, $user, $port, $path, $context='Production', $yes=FALSE, $keepDb=FALSE) {
 		// read local configuration
 		$localPersistenceConfiguration = $this->configurationManager->getConfiguration('Settings', 'TYPO3.Flow.persistence.backendOptions');
 		$localDataPersistentPath = FLOW_PATH_ROOT . 'Data/Persistent';
@@ -128,11 +131,28 @@ class CloneCommandController extends \TYPO3\Flow\Cli\CommandController {
 		}
 		$this->outputLine(' - Configuration seems ok ...');
 
+		########################
+		# Drop and Recreate DB #
+		########################
+
+		if ($keepDb == FALSE) {
+			$this->outputHeadLine('2. Drop and Recreate DB');
+
+			$emptyLocalDbSql = 'DROP DATABASE ' . $localPersistenceConfiguration['dbname'] . '; CREATE DATABASE ' . $localPersistenceConfiguration['dbname'] . ' collate utf8_unicode_ci;';
+			$emptyLocalDbCommand = 'echo ' . escapeshellarg($emptyLocalDbSql) . '  | mysql --host=' . $localPersistenceConfiguration['host'] . ' --user=' . $localPersistenceConfiguration['user'] . ' --password=' . $localPersistenceConfiguration['password'];
+
+			$this->outputLine($emptyLocalDbCommand);
+			$emptyLocalDbResult = shell_exec($emptyLocalDbCommand);
+			$this->outputLine($emptyLocalDbResult);
+		} else {
+			$this->outputHeadLine('2. Skipped (Drop and Recreate DB)');
+		}
+
 		######################
 		#  Transfer Database #
 		######################
 
-		$this->outputHeadLine('2. Transfer Database');
+		$this->outputHeadLine('3. Transfer Database');
 		$transferDatabaseCommand = 'ssh -p ' . $port . ' ' . $user . '@'. $host . ' "mysqldump --add-drop-table --host=' . $remotePersistenceConfiguration['host'] . ' --user=' . $remotePersistenceConfiguration['user'] . ' --password=' . $remotePersistenceConfiguration['password'] . ' ' . $remotePersistenceConfiguration['dbname'] . '" | mysql --host=' . $localPersistenceConfiguration['host'] . ' --user=' . $localPersistenceConfiguration['user'] . ' --password=' . $localPersistenceConfiguration['password'] . ' ' . $localPersistenceConfiguration['dbname'];
 		$this->outputLine($transferDatabaseCommand);
 		$databaseTransferResult = shell_exec($transferDatabaseCommand);
@@ -142,7 +162,7 @@ class CloneCommandController extends \TYPO3\Flow\Cli\CommandController {
 		# Transfer Files #
 		##################
 
-		$this->outputHeadLine('3. Transfer Files');
+		$this->outputHeadLine('4. Transfer Files');
 		$transferFilesCommand = 'rsync -e "ssh -p ' . $port . '" -kLr ' . $user . '@'. $host . ':' . $remoteDataPersistentPath . '/* ' . $localDataPersistentPath;
 		$this->outputLine($transferFilesCommand);
 		$transferFilesResult = shell_exec($transferFilesCommand);
@@ -152,7 +172,7 @@ class CloneCommandController extends \TYPO3\Flow\Cli\CommandController {
 		# Clear Caches #
 		################
 
-		$this->outputHeadLine('4. Clear Caches');
+		$this->outputHeadLine('5. Clear Caches');
 		$flushCachesCommand = 'FLOW_CONTEXT=' . $this->bootstrap->getContext() . ' ./flow flow:cache:flush';
 		$this->outputLine($flushCachesCommand);
 		$flushCachesResult = shell_exec($flushCachesCommand);
@@ -162,7 +182,7 @@ class CloneCommandController extends \TYPO3\Flow\Cli\CommandController {
 		# Migrate DB #
 		##############
 
-		$this->outputHeadLine('5. Migrate cloned DB');
+		$this->outputHeadLine('6. Migrate cloned DB');
 		$migrateDbCommand = 'FLOW_CONTEXT=' . $this->bootstrap->getContext() . ' ./flow doctrine:migrate';
 		$this->outputLine($migrateDbCommand);
 		$migrateDbResult = shell_exec($migrateDbCommand);
@@ -172,7 +192,7 @@ class CloneCommandController extends \TYPO3\Flow\Cli\CommandController {
 		# Publish Resources #
 		#####################
 
-		$this->outputHeadLine('6. Publish Resources');
+		$this->outputHeadLine('7. Publish Resources');
 		$publishResourcesCommand = 'FLOW_CONTEXT=' . $this->bootstrap->getContext() . ' ./flow resource:publish';
 		$this->outputLine($publishResourcesCommand);
 		$publishResourcesResult = shell_exec($publishResourcesCommand);
