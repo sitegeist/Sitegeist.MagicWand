@@ -138,7 +138,7 @@ class CloneCommandController extends \TYPO3\Flow\Cli\CommandController {
 		if ($keepDb == FALSE) {
 			$this->outputHeadLine('2. Drop and Recreate DB');
 
-			$emptyLocalDbSql = 'DROP DATABASE ' . $localPersistenceConfiguration['dbname'] . '; CREATE DATABASE ' . $localPersistenceConfiguration['dbname'] . ';';
+			$emptyLocalDbSql = 'DROP DATABASE ' . $localPersistenceConfiguration['dbname'] . '; CREATE DATABASE ' . $localPersistenceConfiguration['dbname'] . ' collate utf8_unicode_ci;';
 			$emptyLocalDbCommand = 'echo ' . escapeshellarg($emptyLocalDbSql) . '  | mysql --host=' . $localPersistenceConfiguration['host'] . ' --user=' . $localPersistenceConfiguration['user'] . ' --password=' . $localPersistenceConfiguration['password'];
 
 			$this->outputLine($emptyLocalDbCommand);
