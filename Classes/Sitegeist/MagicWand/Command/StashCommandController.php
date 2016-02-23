@@ -7,27 +7,16 @@ namespace Sitegeist\MagicWand\Command;
  *                                                                        */
 
 use TYPO3\Flow\Annotations as Flow;
-use TYPO3\Flow\Cli\CommandController;
 use TYPO3\Flow\Utility\Files as FileUtils;
 use TYPO3\Flow\Core\Bootstrap;
 
 /**
  * @Flow\Scope("singleton")
  */
-class StashCommandController extends CommandController
+class StashCommandController extends AbstractCommandController
 {
 
-    /**
-     * @Flow\InjectConfiguration(path="persistence.backendOptions", package="TYPO3.Flow")
-     * @var array
-     */
-    protected $databaseConfiguration;
 
-    /**
-     * @Flow\Inject
-     * @var Bootstrap
-     */
-    protected $bootstrap;
 
     /**
      * Creates a new stash entry.
@@ -63,8 +52,8 @@ class StashCommandController extends CommandController
         $this->checkConfiguration();
 
         ######################
-    		#  Backup Database   #
-    		######################
+        #  Backup Database   #
+        ######################
 
         $this->outputHeadLine('2. Backup Database');
 
@@ -82,8 +71,8 @@ class StashCommandController extends CommandController
         $this->outputLine(' - Database exported ...');
 
         ###############################
-    		# Backup Persistent Resources #
-    		###############################
+        # Backup Persistent Resources #
+        ###############################
 
         $this->outputHeadLine('3. Backup Persistent Resources');
 
@@ -386,6 +375,9 @@ class StashCommandController extends CommandController
         $this->outputLine('<b>Done!</b> Successfuly restored %s', [$identifier]);
     }
 
+    /**
+     * @throws \TYPO3\Flow\Mvc\Exception\StopActionException
+     */
     protected function checkConfiguration()
     {
         $this->outputHeadLine('1. Check Configuration');
@@ -398,10 +390,4 @@ class StashCommandController extends CommandController
         $this->outputLine(' - Configuration seems ok ...');
     }
 
-    protected function outputHeadLine($line)
-    {
-  		$this->outputLine();
-  		$this->outputLine($line);
-  		$this->outputLine();
-  	}
 }
