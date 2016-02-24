@@ -19,15 +19,12 @@ class StashCommandController extends AbstractCommandController
 
 
     /**
-     * Creates a new stash entry.
-     *
-     * If you provide this command with a name, you can reference the new entry via stash:restore. Otherwise the new
-     * entry can be restored with stash:pop, while multiple entries are handled LIFO-wise.
+     * Creates a new stash entry with the given name.
      *
      * @param string $name The name for the new stash entry
      * @return void
      */
-    public function pushCommand($name = '')
+    public function createCommand($name)
     {
         #######################
         #     Build Paths     #
@@ -35,8 +32,7 @@ class StashCommandController extends AbstractCommandController
 
         $identifier = $name ? $name : md5(time());
 
-        $basePath = sprintf(FLOW_PATH_ROOT . 'Data/MagicWandStash/%s/%s',
-            $name ? 'named' : 'anonymous',
+        $basePath = sprintf(FLOW_PATH_ROOT . 'Data/MagicWandStash/%s',
             $identifier
         );
 
@@ -91,71 +87,13 @@ class StashCommandController extends AbstractCommandController
     }
 
     /**
-     * Restores the last anonymous stash entry
-     *
-     * @param boolean $yes confirm execution without further input
-     * @param boolean $keepDb skip dropping of database during sync
-     * @return void
-     */
-    public function popCommand($yes = false, $keepDb = false)
-    {
-        $basePath = sprintf(FLOW_PATH_ROOT . 'Data/MagicWandStash/anonymous');
-
-        if (!is_dir($basePath)) {
-            $this->outputLine('Stash is empty.');
-            $this->quit(1);
-        }
-
-        $entries = [];
-        $baseDir = new \DirectoryIterator($basePath);
-
-        foreach ($baseDir as $entry) {
-            if (!in_array($entry, ['.', '..'])) {
-                $entries[] = $entry->getPathname();
-            }
-        }
-
-        uasort($entries, function ($a, $b) {
-            return filemtime($b) - filemtime($a);
-        });
-
-        $this->restoreStashEntry($entries[0], basename($entries[0]), $yes, false, $keepDb);
-    }
-
-    /**
-     * Shows the number of anonymous entries in the stash
-     *
-     * @return void
-     */
-    public function countCommand()
-    {
-        $basePath = sprintf(FLOW_PATH_ROOT . 'Data/MagicWandStash/anonymous');
-
-        if (!is_dir($basePath)) {
-            $this->outputLine('Stash is empty.');
-            $this->quit(1);
-        }
-
-        $count = 0;
-        $baseDir = new \DirectoryIterator($basePath);
-
-        foreach ($baseDir as $entry) {
-            if (!in_array($entry, ['.', '..'])) {
-                $count++;
-            }
-        }
-
-        $this->outputLine('<b>%d</b> anonymous %s.', [$count, $count === 1 ? 'entry' : 'entries']);
-    }
-
-    /**
-     * Lists all named stash entries
+     * Lists all entries
      *
      * @return void
      */
     public function listCommand()
     {
-        $basePath = sprintf(FLOW_PATH_ROOT . 'Data/MagicWandStash/named');
+        $basePath = sprintf(FLOW_PATH_ROOT . 'Data/MagicWandStash');
 
         if (!is_dir($basePath)) {
             $this->outputLine('Stash is empty.');
@@ -179,39 +117,19 @@ class StashCommandController extends AbstractCommandController
     }
 
     /**
-     * Clear the stash
+     * Clear the whole stash
      *
-     * If provided with the optional parameter $type, this command will remove only anonymous entries ($type=anonymous),
-     * named entries ($type=named), or by default all (or $type=all)
-     *
-     * @param string $type
      * @return void
      */
-    public function clearCommand($type = 'all')
+    public function clearCommand()
     {
-        switch ($type) {
-            case 'all':
-                $path = FLOW_PATH_ROOT . 'Data/MagicWandStash';
-                break;
-
-            case 'anonymous':
-            case 'named':
-                $path = FLOW_PATH_ROOT . 'Data/MagicWandStash/' . $type;
-                break;
-
-            default:
-                $this->outputLine('<error>You have to provide a correct type (all|anonymous|named)</error>');
-                $this->quit(1);
-
-        }
-
+        $path = FLOW_PATH_ROOT . 'Data/MagicWandStash';
         FileUtils::removeDirectoryRecursively($path);
-
         $this->outputLine('<b>Done!</b> Cleanup successful.');
     }
 
     /**
-     * Restores named stash entries
+     * Restores stash entries
      *
      * @param string $name The name of the stash entry that will be restored
      * @param boolean $yes confirm execution without further input
@@ -220,7 +138,7 @@ class StashCommandController extends AbstractCommandController
      */
     public function restoreCommand($name, $yes = false, $keepDb = false)
     {
-        $basePath = sprintf(FLOW_PATH_ROOT . 'Data/MagicWandStash/named/%s', $name);
+        $basePath = sprintf(FLOW_PATH_ROOT . 'Data/MagicWandStash/%s', $name);
         $this->restoreStashEntry($basePath, $name, $yes, true, $keepDb);
     }
 
@@ -233,7 +151,7 @@ class StashCommandController extends AbstractCommandController
      */
     public function removeCommand($name, $yes = false)
     {
-        $directory = FLOW_PATH_ROOT . 'Data/MagicWandStash/named/' . $name;
+        $directory = FLOW_PATH_ROOT . 'Data/MagicWandStash/' . $name;
 
         if (!is_dir($directory)) {
             $this->outputLine('<error>%s does not exist</error>', [$name]);
@@ -260,7 +178,7 @@ class StashCommandController extends AbstractCommandController
     }
 
     /**
-     * Actual resore logic
+     * Actual restore logic
      *
      * @param string $source
      * @param string $identifier
