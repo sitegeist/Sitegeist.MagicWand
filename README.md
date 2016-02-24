@@ -1,4 +1,6 @@
-# Tools that make the Flow/Neos development easier
+# Sitegeist.MagicWand
+
+> Tools that make the Flow/Neos development easier
 
 This package is intended to be used on development systems and should NEVER be
 installed on production servers. *Please add this package to the require-dev
@@ -8,11 +10,11 @@ section of your composer.json*.
 
 ## Easy and fast cloning of Flow and Neos Installations
 
-The cli commands `clone:list`, `clone:preset` and `clone:remotehost` help to
-clone a remote Flow/Neos setup into the Flow/Neos where the command is executed.
+The CLI commands `clone:list`, `clone:preset` and `clone:remotehost` help to
+clone a remote Flow/Neos setup into the local Flow/Neos installation that executes the command.
 
-**Attention: These commands will empty the local database and resources of the flow setup the cli is executed on.
-The data is replaced with the informations from the remote host. Make shure you understand that before actual
+**Attention: These commands will empty the local database and resources of your local Flow installation.
+The data is replaced with the information from the remote host. Make sure you understand that before actually
 using the commands.**
 
 ### sitegeist:magicwand:clone:list
@@ -37,8 +39,8 @@ Sitegeist:
 #        context: Production
 ```
 
-The Settings should be added to the Global Settings.yaml of the project every
-developer with ssh-access to the server can easyly clone the setup.
+The settings should be added to the global `Settings.yaml` of the project, so that every
+developer with SSH-access to the remote server can easily clone the setup.
 
 ### CLI-Examples
 ```
@@ -55,11 +57,11 @@ developer with ssh-access to the server can easyly clone the setup.
 ## Quick backup and restore mechanisms for persistent data
 
 Sometimes it's useful to quickly backup an integral persistent state of an application, to then perform some risky
-change operations and then restore the data in case of failure. The `stash:create`,`stash:restore`,`stash:list` and
-`stash:cleat` commands of this package allow for a flawless backup-try-restore workflow.
+change operations and restore the data in case of failure. The `stash:create`,`stash:restore`,`stash:list` and
+`stash:clear` commands of this package allow for a flawless backup-try-restore workflow.
 
-**Attention: These commands will empty the local database and resources of the flow setup the cli is executed on.
-The data is replaced with the informations from the stash. Make shure you understand that before actual using
+**Attention: These commands will empty the database and resources of your local Flow installation.
+The data is replaced with the information from the stash. Make sure you understand that before actually using
 the commands.**
 
 ### CLI-Examples
