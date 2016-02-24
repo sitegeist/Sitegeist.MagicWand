@@ -4,13 +4,16 @@ This package is intended to be used on development systems and should NEVER be
 installed on production servers. *Please add this package to the require-dev
 section of your composer.json*.
 
-**Disclaimer: This package will drop the database and resources of the flow setup it is executed. The data is replaced
-with the informations from the remote host. Make shure you understand und want that before actual using the commands.**
+*The development and the public-releases of this package was generously sponsored by our employer http://www.sitegeist.de.*
 
 ## Easy and fast cloning of Flow and Neos Installations
 
 The cli commands `clone:list`, `clone:preset` and `clone:remotehost` help to
 clone a remote Flow/Neos setup into the Flow/Neos where the command is executed.
+
+**Attention: These commands will empty the local database and resources of the flow setup the cli is executed on.
+The data is replaced with the informations from the remote host. Make shure you understand that before actual
+using the commands.**
 
 ### sitegeist:magicwand:clone:list
 
@@ -55,6 +58,10 @@ Sometimes it's useful to quickly backup an integral persistent state of an appli
 change operations and then restore the data in case of failure. The `stash:create`,`stash:restore`,`stash:list` and
 `stash:cleat` commands of this package allow for a flawless backup-try-restore workflow.
 
+**Attention: These commands will empty the local database and resources of the flow setup the cli is executed on.
+The data is replaced with the informations from the stash. Make shure you understand that before actual using
+the commands.**
+
 ### CLI-Examples
 ```
 # Create a backup of the entire database and the directory `Data/Persistent` ("stash entry") under the given name
@@ -75,5 +82,3 @@ change operations and then restore the data in case of failure. The `stash:creat
 
 * Wilhelm Behncke - behncke@sitegeist.de
 * Martin Ficzel - ficzel@sitegeist.de
-
-The development and the public-releases of this package was generously sponsored by our employer http://www.sitegeist.de.
