@@ -4,8 +4,8 @@ This package is intended to be used on development systems and should NEVER be
 installed on production servers. *Please add this package to the require-dev
 section of your composer.json*.
 
-*Disclaimer: This package will drop the database and resources of the flow setup it is executed. The data is replaced
-with the informations from the remote host. Make shure you understand und want that before actual using the commands.*
+**Disclaimer: This package will drop the database and resources of the flow setup it is executed. The data is replaced
+with the informations from the remote host. Make shure you understand und want that before actual using the commands.**
 
 ## Easy and fast cloning of Flow and Neos Installations
 
@@ -52,8 +52,8 @@ developer with ssh-access to the server can easyly clone the setup.
 ## Quick backup and restore mechanisms for persistent data
 
 Sometimes it's useful to quickly backup an integral persistent state of an application, to then perform some risky
-change operations and then restore the data in case of failure. The `stash` commands of this package allow for a
-flawless backup-try-restore workflow.
+change operations and then restore the data in case of failure. The `stash:create`,`stash:restore`,`stash:list` and
+`stash:cleat` commands of this package allow for a flawless backup-try-restore workflow.
 
 ### CLI-Examples
 ```
