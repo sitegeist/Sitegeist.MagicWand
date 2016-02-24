@@ -98,13 +98,12 @@ class CloneCommandController extends AbstractCommandController
     ) {
         // read local configuration
         $this->outputHeadLine('Read local configuration');
-        $localPersistenceConfiguration = $this->databaseConfiguration;
-        $this->outputLine(\Symfony\Component\Yaml\Yaml::dump($localPersistenceConfiguration));
+
         $localDataPersistentPath = FLOW_PATH_ROOT . 'Data/Persistent';
 
         // read remote configuration
-        $remotePersistenceConfigurationYaml = $this->executeShellCommandWithFeedback(
-            'Fetch remote configuration',
+        $this->outputHeadLine('Fetch remote configuration');
+        $remotePersistenceConfigurationYaml = $this->executeLocalShellCommand(
             'ssh -p %s  %s@%s  "cd %s; FLOW_CONTEXT=%s ./flow configuration:show --type Settings --path TYPO3.Flow.persistence.backendOptions;"',
             [
                 $port,
@@ -112,6 +111,9 @@ class CloneCommandController extends AbstractCommandController
                 $host,
                 $path,
                 $context
+            ],
+            [
+                self::HIDE_RESULT
             ]
         );
 
@@ -137,35 +139,36 @@ class CloneCommandController extends AbstractCommandController
             }
         }
 
+        ##################
+        # Define Secrets #
+        ##################
+
+        $this->addSecret($this->databaseConfiguration['user']);
+        $this->addSecret($this->databaseConfiguration['password']);
+        $this->addSecret($remotePersistenceConfiguration['user']);
+        $this->addSecret($remotePersistenceConfiguration['password']);
+
         #######################
         # Check Configuration #
         #######################
 
-        $this->outputHeadLine('Check Configuration');
-        if ($remotePersistenceConfiguration['driver'] != 'pdo_mysql' && $localPersistenceConfiguration['driver'] != 'pdo_mysql') {
-            $this->outputLine(' only mysql is supported');
-            $this->quit(1);
-        }
-        if ($remotePersistenceConfiguration['charset'] != $localPersistenceConfiguration['charset']) {
-            $this->outputLine(' the databases have to use the same charset');
-            $this->quit(1);
-        }
-        $this->outputLine(' - Configuration seems ok ...');
+        $this->checkConfiguration($remotePersistenceConfiguration);
 
         ########################
         # Drop and Recreate DB #
         ########################
 
         if ($keepDb == false) {
-            $emptyLocalDbSql = 'DROP DATABASE ' . $localPersistenceConfiguration['dbname'] . '; CREATE DATABASE ' . $localPersistenceConfiguration['dbname'] . ' collate utf8_unicode_ci;';
-            $this->executeShellCommandWithFeedback(
-                'Drop and Recreate DB',
+            $this->outputHeadLine('Drop and Recreate DB');
+
+            $emptyLocalDbSql = 'DROP DATABASE ' . $this->databaseConfiguration['dbname'] . '; CREATE DATABASE ' . $this->databaseConfiguration['dbname'] . ' collate utf8_unicode_ci;';
+            $this->executeLocalShellCommand(
                 'echo %s | mysql --host=%s --user=%s --password=%s',
                 [
                     escapeshellarg($emptyLocalDbSql),
-                    $localPersistenceConfiguration['host'],
-                    $localPersistenceConfiguration['user'],
-                    $localPersistenceConfiguration['password']
+                    $this->databaseConfiguration['host'],
+                    $this->databaseConfiguration['user'],
+                    $this->databaseConfiguration['password']
                 ]
             );
         } else {
@@ -176,8 +179,8 @@ class CloneCommandController extends AbstractCommandController
         #  Transfer Database #
         ######################
 
-        $this->executeShellCommandWithFeedback(
-            'Transfer Database',
+        $this->outputHeadLine('Transfer Database');
+        $this->executeLocalShellCommand(
             'ssh -p %s %s@%s "mysqldump --add-drop-table --host=%s --user=%s --password=%s %s" | mysql --host=%s --user=%s --password=%s %s',
             [
                 $port,
@@ -187,10 +190,10 @@ class CloneCommandController extends AbstractCommandController
                 $remotePersistenceConfiguration['user'],
                 $remotePersistenceConfiguration['password'],
                 $remotePersistenceConfiguration['dbname'],
-                $localPersistenceConfiguration['host'],
-                $localPersistenceConfiguration['user'],
-                $localPersistenceConfiguration['password'],
-                $localPersistenceConfiguration['dbname']
+                $this->databaseConfiguration['host'],
+                $this->databaseConfiguration['user'],
+                $this->databaseConfiguration['password'],
+                $this->databaseConfiguration['dbname']
             ]
         );
 
@@ -198,8 +201,8 @@ class CloneCommandController extends AbstractCommandController
         # Transfer Files #
         ##################
 
-        $this->executeShellCommandWithFeedback(
-            'Transfer Files',
+        $this->outputHeadLine('Transfer Files');
+        $this->executeLocalShellCommand(
             'rsync -e "ssh -p %s" -kLr %s@%s:%s/* %s',
             [
                 $port,
@@ -214,30 +217,41 @@ class CloneCommandController extends AbstractCommandController
         # Clear Caches #
         ################
 
-        $this->executeShellCommandWithFeedback(
-            'Clear Caches',
-            'FLOW_CONTEXT=%s ./flow flow:cache:flush',
-            [$this->bootstrap->getContext()]
-        );
+        $this->outputHeadLine('Clear Caches');
+        $this->executeLocalFlowCommand('flow:cache:flush');
 
         ##############
         # Migrate DB #
         ##############
 
-        $this->executeShellCommandWithFeedback(
-            'Migrate cloned DB',
-            'FLOW_CONTEXT=%s ./flow doctrine:migrate',
-            [$this->bootstrap->getContext()]
-        );
+        $this->outputHeadLine('Migrate cloned DB');
+        $this->executeLocalFlowCommand('doctrine:migrate');
 
         #####################
         # Publish Resources #
         #####################
 
-        $this->executeShellCommandWithFeedback(
-            'Migrate cloned DB',
-            'FLOW_CONTEXT=%s ./flow resource:publish',
-            [$this->bootstrap->getContext()]
-        );
+        $this->outputHeadLine('Publish Resources');
+        $this->executeLocalFlowCommand('resource:publish');
+
+    }
+
+    /**
+     * @param $remotePersistenceConfiguration
+     * @param $this->databaseConfiguration
+     * @throws \TYPO3\Flow\Mvc\Exception\StopActionException
+     */
+    protected function checkConfiguration($remotePersistenceConfiguration)
+    {
+        $this->outputHeadLine('Check Configuration');
+        if ($remotePersistenceConfiguration['driver'] != 'pdo_mysql' && $this->databaseConfiguration['driver'] != 'pdo_mysql') {
+            $this->outputLine(' only mysql is supported');
+            $this->quit(1);
+        }
+        if ($remotePersistenceConfiguration['charset'] != $this->databaseConfiguration['charset']) {
+            $this->outputLine(' the databases have to use the same charset');
+            $this->quit(1);
+        }
+        $this->outputLine(' - Configuration seems ok ...');
     }
 }

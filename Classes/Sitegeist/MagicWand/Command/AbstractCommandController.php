@@ -12,6 +12,10 @@ use TYPO3\Flow\Cli\CommandController;
 
 abstract class AbstractCommandController extends CommandController
 {
+
+    const HIDE_RESULT = 1;
+    const HIDE_COMMAND = 2;
+
     /**
      * @Flow\InjectConfiguration(path="persistence.backendOptions", package="TYPO3.Flow")
      * @var array
@@ -30,28 +34,67 @@ abstract class AbstractCommandController extends CommandController
     protected $headlineNumber = 0;
 
     /**
-     * @param string $title
+     * @var array
+     */
+    protected $secrets = [];
+
+
+    /**
      * @param string $commands
      * @param array $arguments
+     * @param array $options
      */
-    protected function executeShellCommandWithFeedback($title, $command, $arguments, $secret = NULL)
+    protected function executeLocalShellCommand($command, $arguments = [], $options = [])
     {
-        $this->outputHeadLine($title);
         $customizedCommand = call_user_func_array('sprintf', array_merge([$command], $arguments));
-        $this->outputLine($customizedCommand);
+        if (!in_array(self::HIDE_COMMAND, $options)) {
+            $this->outputLine($customizedCommand);
+        }
         $customizedCommandResult = shell_exec($customizedCommand);
-        $this->outputLine($customizedCommandResult);
+        if (!in_array(self::HIDE_RESULT, $options)) {
+            $this->outputLine($customizedCommandResult);
+        }
         return $customizedCommandResult;
+    }
+
+    /**
+     * @param string $commands
+     * @param array $arguments
+     * @param array $options
+     */
+    protected function executeLocalFlowCommand($command, $arguments = [], $options = [])
+    {
+        $flowCommand = 'FLOW_CONTEXT=' . $this->bootstrap->getContext() . ' ./flow ' . $command;
+        return $this->executeLocalShellCommand($flowCommand, $arguments, $options);
     }
 
     /**
      * @param $line
      */
-    protected function outputHeadLine($line)
+    protected function outputHeadLine($line = '', $arguments = [])
     {
         $this->headlineNumber ++;
         $this->outputLine();
-        $this->outputLine($this->headlineNumber . '. ' . $line);
+        $this->outputLine($this->headlineNumber . '. ' . $line, $arguments);
         $this->outputLine();
+    }
+
+    /**
+     * @param $line
+     */
+    protected function outputLine($line = '', array $arguments = [])
+    {
+        $filteredLine = $line;
+        foreach ($this->secrets as $secret) {
+            $filteredLine = str_replace($secret, '[xxx]', $filteredLine);
+        }
+        parent::outputLine($filteredLine);
+    }
+
+    /**
+     * @param $secret
+     */
+    protected function addSecret($secret) {
+        $this->secrets[] = $secret;
     }
 }
