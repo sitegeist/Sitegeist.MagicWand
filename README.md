@@ -21,9 +21,21 @@ clone a remote Flow/Neos setup into the local Flow/Neos installation that execut
 The data is replaced with the information from the remote host. Make sure you understand that before actually
 using the commands.**
 
-### sitegeist:magicwand:clone:list
+### CLI-Examples
+```
+# show all available presets
+./flow clone:list
 
-Show the presets that are defined in the configuration path. `Sitegeist.MagicWand.clonePresets`
+# clone from remote host with the information stored in the master preset
+./flow clone:preset master
+
+# clone remote host with the information stored in the master preset
+./flow clone:remotehost --host=host --user=user --port=port --path=path --context=context
+```
+
+### Settings.yaml
+
+The presets that are defined in the configuration path. `Sitegeist.MagicWand.clonePresets`
 
 ```
 Sitegeist:
@@ -45,18 +57,6 @@ Sitegeist:
 
 The settings should be added to the global `Settings.yaml` of the project, so that every
 developer with SSH-access to the remote server can easily clone the setup.
-
-### CLI-Examples
-```
-# show all available presets
-./flow clone:list
-
-# clone from remote host with the information stored in the master preset
-./flow clone:preset master
-
-# clone remote host with the information stored in the master preset
-./flow clone:remotehost --host=host --user=user --port=port --path=path --context=context
-```
 
 ## Quick backup and restore mechanisms for persistent data
 
