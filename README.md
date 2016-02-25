@@ -1,10 +1,9 @@
 # Sitegeist.MagicWand
+### Tools that make the Flow/Neos development easier
 
-> Tools that make the Flow/Neos development easier
-
-This package is intended to be used on development systems and should NEVER be
-installed on production servers. *Please add this package to the require-dev
-section of your composer.json*.
+This package is intended to be used on development systems and should **NEVER** be
+installed on production servers. **Please add this package to the require-dev
+section of your composer.json**.
 
 ### Authors & Sponsors
 
