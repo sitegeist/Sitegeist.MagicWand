@@ -139,6 +139,12 @@ class CloneCommandController extends AbstractCommandController
             }
         }
 
+        ######################
+        # Measure Start Time #
+        ######################
+
+        $startTimestamp = time();
+
         ##################
         # Define Secrets #
         ##################
@@ -234,11 +240,20 @@ class CloneCommandController extends AbstractCommandController
         $this->outputHeadLine('Publish Resources');
         $this->executeLocalFlowCommand('resource:publish');
 
+        #################
+        # Final Message #
+        #################
+
+        $endTimestamp = time();
+        $duration = $endTimestamp - $startTimestamp;
+
+        $this->outputHeadLine('Done');
+        $this->outputLine('Successfully cloned in %s seconds', [$duration]);
     }
 
     /**
      * @param $remotePersistenceConfiguration
-     * @param $this->databaseConfiguration
+     * @param $this ->databaseConfiguration
      * @throws \TYPO3\Flow\Mvc\Exception\StopActionException
      */
     protected function checkConfiguration($remotePersistenceConfiguration)

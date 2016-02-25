@@ -26,14 +26,14 @@ class StashCommandController extends AbstractCommandController
      */
     public function createCommand($name)
     {
+        $startTimestamp = time();
+
         #######################
         #     Build Paths     #
         #######################
 
-        $identifier = $name ? $name : md5(time());
-
         $basePath = sprintf(FLOW_PATH_ROOT . 'Data/MagicWandStash/%s',
-            $identifier
+            $name
         );
 
         $databaseDestination = $basePath . '/database.sql';
@@ -83,7 +83,15 @@ class StashCommandController extends AbstractCommandController
             ]
         );
 
-        $this->outputLine('<b>Done!</b> Successfuly stashed %s', [$identifier]);
+        #################
+        # Final Message #
+        #################
+
+        $endTimestamp = time();
+        $duration = $endTimestamp - $startTimestamp;
+
+        $this->outputHeadLine('Done');
+        $this->outputLine('Successfuly stashed %s in %s seconds', [$name, $duration]);
     }
 
     /**
@@ -123,9 +131,20 @@ class StashCommandController extends AbstractCommandController
      */
     public function clearCommand()
     {
+        $startTimestamp = time();
+
         $path = FLOW_PATH_ROOT . 'Data/MagicWandStash';
         FileUtils::removeDirectoryRecursively($path);
-        $this->outputLine('<b>Done!</b> Cleanup successful.');
+
+        #################
+        # Final Message #
+        #################
+
+        $endTimestamp = time();
+        $duration = $endTimestamp - $startTimestamp;
+
+        $this->outputHeadLine('Done');
+        $this->outputLine('Cleanup successful in %s seconds', [$duration]);
     }
 
     /**
@@ -172,24 +191,40 @@ class StashCommandController extends AbstractCommandController
             }
         }
 
+        ###############
+        # Start Timer #
+        ###############
+
+
+        $startTimestamp = time();
+
         FileUtils::removeDirectoryRecursively($directory);
 
-        $this->outputLine('<b>Done!</b> Successfuly removed %s', [$name]);
+        #################
+        # Final Message #
+        #################
+
+        $endTimestamp = time();
+        $duration = $endTimestamp - $startTimestamp;
+
+        $this->outputHeadLine('Done');
+        $this->outputLine('Cleanup removed stash %s in %s seconds', [$name, $duration]);
+
     }
 
     /**
      * Actual restore logic
      *
      * @param string $source
-     * @param string $identifier
+     * @param string $name
      * @param boolean $force
      * @param boolean $keepDb
      * @return void
      */
-    protected function restoreStashEntry($source, $identifier, $force = false, $preserve = true, $keepDb = false)
+    protected function restoreStashEntry($source, $name, $force = false, $preserve = true, $keepDb = false)
     {
         if (!is_dir($source)) {
-            $this->outputLine('<error>%s does not exist</error>', [$identifier]);
+            $this->outputLine('<error>%s does not exist</error>', [$name]);
             $this->quit(1);
         }
 
@@ -210,6 +245,12 @@ class StashCommandController extends AbstractCommandController
                 $this->outputLine();
             }
         }
+
+        ######################
+        # Measure Start Time #
+        ######################
+
+        $startTimestamp = time();
 
         #######################
         # Check Configuration #
@@ -300,7 +341,15 @@ class StashCommandController extends AbstractCommandController
         $this->outputHeadLine('Publish Resources');
         $this->executeLocalFlowCommand('resource:publish');
 
-        $this->outputLine('<b>Done!</b> Successfuly restored %s', [$identifier]);
+        #################
+        # Final Message #
+        #################
+
+        $endTimestamp = time();
+        $duration = $endTimestamp - $startTimestamp;
+
+        $this->outputHeadLine('Done');
+        $this->outputLine('Successfuly restored %s in %s seconds', [$name, $duration]);
     }
 
     /**

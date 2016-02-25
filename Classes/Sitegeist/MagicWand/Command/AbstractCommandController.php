@@ -73,9 +73,9 @@ abstract class AbstractCommandController extends CommandController
      */
     protected function outputHeadLine($line = '', $arguments = [])
     {
-        $this->headlineNumber ++;
+        $this->headlineNumber++;
         $this->outputLine();
-        $this->outputLine($this->headlineNumber . '. ' . $line, $arguments);
+        $this->outputLine('<b>' . $this->headlineNumber . '. ' . $line . '</b>', $arguments);
         $this->outputLine();
     }
 
@@ -88,13 +88,14 @@ abstract class AbstractCommandController extends CommandController
         foreach ($this->secrets as $secret) {
             $filteredLine = str_replace($secret, '[xxx]', $filteredLine);
         }
-        parent::outputLine($filteredLine);
+        parent::outputLine($filteredLine, $arguments);
     }
 
     /**
      * @param $secret
      */
-    protected function addSecret($secret) {
+    protected function addSecret($secret)
+    {
         $this->secrets[] = $secret;
     }
 }
