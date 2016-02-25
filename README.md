@@ -6,6 +6,11 @@ This package is intended to be used on development systems and should NEVER be
 installed on production servers. *Please add this package to the require-dev
 section of your composer.json*.
 
+### Authors & Sponsors
+
+* Wilhelm Behncke - behncke@sitegeist.de
+* Martin Ficzel - ficzel@sitegeist.de
+
 *The development and the public-releases of this package was generously sponsored by our employer http://www.sitegeist.de.*
 
 ## Easy and fast cloning of Flow and Neos Installations
@@ -80,7 +85,11 @@ the commands.**
 ```
 **Note:** Use this command on a regular basis, because your stash tends to grow **very** large.
 
-## Authors
+## Contribution
 
-* Wilhelm Behncke - behncke@sitegeist.de
-* Martin Ficzel - ficzel@sitegeist.de
+We will gladly accept contributions especially to improve the rsync, and ssh-options for a specific preset. Please send us pull requests.
+
+### We will NOT add the following features to the main-repository
+
+* Windows support: We rely on a unix shell and a fs that is capable of hard-link.
+* SSH with username/password: We consider this unsafe and recommend the use of public- and private-keys.
