@@ -91,5 +91,5 @@ We will gladly accept contributions especially to improve the rsync, and ssh-opt
 
 ### We will NOT add the following features to the main-repository
 
-* Windows support: We rely on a unix shell and a fs that is capable of hard-link.
+* Windows support: We rely on a unix-shell and a filesystem that is capable of hard-links.
 * SSH with username/password: We consider this unsafe and recommend the use of public- and private-keys.
