@@ -64,7 +64,7 @@ abstract class AbstractCommandController extends CommandController
      */
     protected function executeLocalShellCommandWithFlowContext($command, $arguments = [], $options = [])
     {
-        $flowCommand = 'FLOW_CONTEXT=' . $this->bootstrap->getContext() . ' ' . $command;
+        $flowCommand = sprintf('FLOW_CONTEXT=%s %s', $this->bootstrap->getContext(), $command);
         return $this->executeLocalShellCommand($flowCommand, $arguments, $options);
     }
 
@@ -75,7 +75,7 @@ abstract class AbstractCommandController extends CommandController
      */
     protected function executeLocalFlowCommand($command, $arguments = [], $options = [])
     {
-        $flowCommand = './flow ' . $command;
+        $flowCommand = sprintf('./flow %s', $command);
         return $this->executeLocalShellCommandWithFlowContext($flowCommand, $arguments, $options);
     }
 
