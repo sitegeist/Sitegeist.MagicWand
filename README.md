@@ -1,17 +1,41 @@
-# Tools that make the Flow/Neos development easier
+# Sitegeist.MagicWand
+### Tools that make the Flow/Neos development easier
 
-This package is intended to be used on development systems and should NEVER be
-installed on production servers. Please add this package to the require-dev
-section of your composer.json.
+This package is intended to be used on development systems and should **NEVER** be
+installed on production servers. **Please add this package to the require-dev
+section of your composer.json**.
+
+### Authors & Sponsors
+
+* Wilhelm Behncke - behncke@sitegeist.de
+* Martin Ficzel - ficzel@sitegeist.de
+
+*The development and the public-releases of this package was generously sponsored by our employer http://www.sitegeist.de.*
 
 ## Easy and fast cloning of Flow and Neos Installations
 
-The cli commands `clone:list`, `clone:preset` and `clone:remotehost` help to
-clone a remote Flow/Neos setup into the Flow/Neos where the command is executed.
+The CLI commands `clone:list`, `clone:preset` and `clone:remotehost` help to
+clone a remote Flow/Neos setup into the local Flow/Neos installation that executes the command.
 
-### sitegeist:magicwand:clone:list
+**Attention: These commands will empty the local database and resources of your local Flow installation.
+The data is replaced with the information from the remote host. Make sure you understand that before actually
+using the commands.**
 
-Show the presets that are defined in the configuration path. `Sitegeist.MagicWand.clonePresets`
+### CLI-Examples
+```
+# show all available presets
+./flow clone:list
+
+# clone from remote host with the information stored in the master preset
+./flow clone:preset master
+
+# clone remote host with the information stored in the master preset
+./flow clone:remotehost --host=host --user=user --port=port --path=path --context=context
+```
+
+### Settings.yaml
+
+The presets that are defined in the configuration path. `Sitegeist.MagicWand.clonePresets`
 
 ```
 Sitegeist:
@@ -31,44 +55,40 @@ Sitegeist:
 #        context: Production
 ```
 
-The Settings should be added to the Global Settings.yaml of the project every
-developer with ssh-access to the server can easyly clone the setup.
-
-### sitegeist:magicwand:clone:preset / sitegeist:magicwand:clone:remotehost
-
-Use one of the presets described or the given arguments to fetch the content
-of the remote host into the current Flow/Neos Setup.
+The settings should be added to the global `Settings.yaml` of the project, so that every
+developer with SSH-access to the remote server can easily clone the setup.
 
 ## Quick backup and restore mechanisms for persistent data
 
 Sometimes it's useful to quickly backup an integral persistent state of an application, to then perform some risky
-change operations and then restore the data in case of failure. The `stash` commands of this package allow for a
-flawless backup-try-restore workflow.
+change operations and restore the data in case of failure. The `stash:create`,`stash:restore`,`stash:list` and
+`stash:clear` commands of this package allow for a flawless backup-try-restore workflow.
 
-In combination with the `clone` commands, it's even possible to make quick production backups.
+**Attention: These commands will empty the database and resources of your local Flow installation.
+The data is replaced with the information from the stash. Make sure you understand that before actually using
+the commands.**
 
-### sitegeist:magicwand:stash:push
+### CLI-Examples
+```
+# Create a backup of the entire database and the directory `Data/Persistent` ("stash entry") under the given name
+./flow stash:create --name=name
 
-> Creates a backup of the entire database and the directory `Data/Persistent` ("stash entry") in either a named (with
-> the parameter `--name`) or anonymous fashion
+# Lists all named stash entries
+./flow stash:list
 
-**Note:** Anonymous stash entries are managed LIFO-wise. That means, that an anonymous stash entry can only be restored
-once and is gone afterwards. Named stash entries can be restored multiple times.
+# Restores a stash entry
+./flow stash:restore --name=name
 
-### sitegeist:magicwand:stash:pop
-
-> Restores the latest anonymous stash entry
-
-### sitegeist:magicwand:stash:list
-
-> Lists all named stash entries
-
-### sitegeist:magicwand:stash:restore
-
-> Restores a named stash entry (with the parameter `--name`)
-
-### sitegeist:magicwand:stash:clear
-
-> Removes all stash entries
-
+# Removes all stash entries
+./flow stash:clear
+```
 **Note:** Use this command on a regular basis, because your stash tends to grow **very** large.
+
+## Contribution
+
+We will gladly accept contributions especially to improve the rsync, and ssh-options for a specific preset. Please send us pull requests.
+
+### We will NOT add the following features to the main-repository
+
+* Windows support: We rely on a unix-shell and a filesystem that is capable of hard-links.
+* SSH with username/password: We consider this unsafe and recommend the use of public- and private-keys.

@@ -7,52 +7,37 @@ namespace Sitegeist\MagicWand\Command;
  *                                                                        */
 
 use TYPO3\Flow\Annotations as Flow;
-use TYPO3\Flow\Cli\CommandController;
 use TYPO3\Flow\Utility\Files as FileUtils;
 use TYPO3\Flow\Core\Bootstrap;
 
 /**
  * @Flow\Scope("singleton")
  */
-class StashCommandController extends CommandController
+class StashCommandController extends AbstractCommandController
 {
 
-    /**
-     * @Flow\InjectConfiguration(path="persistence.backendOptions", package="TYPO3.Flow")
-     * @var array
-     */
-    protected $databaseConfiguration;
+
 
     /**
-     * @Flow\Inject
-     * @var Bootstrap
-     */
-    protected $bootstrap;
-
-    /**
-     * Creates a new stash entry.
-     *
-     * If you provide this command with a name, you can reference the new entry via stash:restore. Otherwise the new
-     * entry can be restored with stash:pop, while multiple entries are handled LIFO-wise.
+     * Creates a new stash entry with the given name.
      *
      * @param string $name The name for the new stash entry
      * @return void
      */
-    public function pushCommand($name = '')
+    public function createCommand($name)
     {
+        $startTimestamp = time();
+
         #######################
         #     Build Paths     #
         #######################
 
-        $identifier = $name ? $name : md5(time());
-
-        $basePath = sprintf(FLOW_PATH_ROOT . 'Data/MagicWandStash/%s/%s',
-            $name ? 'named' : 'anonymous',
-            $identifier
+        $basePath = sprintf(FLOW_PATH_ROOT . 'Data/MagicWandStash/%s',
+            $name
         );
 
-        $databaseDestination = $basePath .'/database.sql';
-        $persistentDestination = $basePath .'/persistent/';
+        $databaseDestination = $basePath . '/database.sql';
+        $persistentDestination = $basePath . '/persistent/';
 
         FileUtils::createDirectoryRecursively($basePath);
 
@@ -62,104 +47,61 @@ class StashCommandController extends CommandController
 
         $this->checkConfiguration();
 
+        ##################
+        # Define Secrets #
+        ##################
+
+        $this->addSecret($this->databaseConfiguration['user']);
+        $this->addSecret($this->databaseConfiguration['password']);
+
         ######################
-    		#  Backup Database   #
-    		######################
+        #  Backup Database   #
+        ######################
 
-        $this->outputHeadLine('2. Backup Database');
-
-        $mysqlDumpCommand = sprintf('mysqldump --add-drop-table --host="%s" --user="%s" --password="%s" %s > %s',
-            $this->databaseConfiguration['host'],
-            $this->databaseConfiguration['user'],
-            $this->databaseConfiguration['password'],
-            $this->databaseConfiguration['dbname'],
-            $databaseDestination
+        $this->outputHeadLine('Backup Database');
+        $this->executeLocalShellCommand(
+            'mysqldump --add-drop-table --host="%s" --user="%s" --password="%s" %s > %s',
+            [
+                $this->databaseConfiguration['host'],
+                $this->databaseConfiguration['user'],
+                $this->databaseConfiguration['password'],
+                $this->databaseConfiguration['dbname'],
+                $databaseDestination
+            ]
         );
 
-        $mysqlDumpOutput = shell_exec($mysqlDumpCommand);
-
-        $this->outputLine($mysqlDumpOutput);
-        $this->outputLine(' - Database exported ...');
-
         ###############################
-    		# Backup Persistent Resources #
-    		###############################
+        # Backup Persistent Resources #
+        ###############################
 
-        $this->outputHeadLine('3. Backup Persistent Resources');
+        $this->outputHeadLine('Backup Persistent Resources');
+        $this->executeLocalShellCommand(
+            'cp -al %s %s',
+            [
+                FLOW_PATH_ROOT . 'Data/Persistent',
+                $persistentDestination
+            ]
+        );
 
-        FileUtils::copyDirectoryRecursively(FLOW_PATH_ROOT . 'Data/Persistent', $persistentDestination);
+        #################
+        # Final Message #
+        #################
 
-        $this->outputLine(' - Persistent Resources exported ...');
+        $endTimestamp = time();
+        $duration = $endTimestamp - $startTimestamp;
 
-        $this->outputLine();
-        $this->outputLine();
-        $this->outputLine('<b>Done!</b> Successfuly stashed %s', [$identifier]);
+        $this->outputHeadLine('Done');
+        $this->outputLine('Successfuly stashed %s in %s seconds', [$name, $duration]);
     }
 
     /**
-     * Restores the last anonymous stash entry
+     * Lists all entries
      *
-     * @param boolean $yes confirm execution without further input
-     * @param boolean $keepDb skip dropping of database during sync
      * @return void
      */
-    public function popCommand($yes = false, $keepDb = false)
+    public function listCommand()
     {
-        $basePath = sprintf(FLOW_PATH_ROOT . 'Data/MagicWandStash/anonymous');
-
-        if (!is_dir($basePath)) {
-            $this->outputLine('Stash is empty.');
-            $this->quit(1);
-        }
-
-        $entries = [];
-        $baseDir = new \DirectoryIterator($basePath);
-
-        foreach ($baseDir as $entry) {
-            if (!in_array($entry, ['.', '..'])) {
-                $entries[] = $entry->getPathname();
-            }
-        }
-
-        uasort($entries, function ($a, $b) {
-            return filemtime($b) - filemtime($a);
-        });
-
-        $this->restoreStashEntry($entries[0], basename($entries[0]), $yes, false, $keepDb);
-    }
-
-    /**
-     * Shows the number of anonymous entries in the stash
-     *
-     * @return void
-     */
-    public function countCommand() {
-        $basePath = sprintf(FLOW_PATH_ROOT . 'Data/MagicWandStash/anonymous');
-
-        if (!is_dir($basePath)) {
-            $this->outputLine('Stash is empty.');
-            $this->quit(1);
-        }
-
-        $count = 0;
-        $baseDir = new \DirectoryIterator($basePath);
-
-        foreach ($baseDir as $entry) {
-            if (!in_array($entry, ['.', '..'])) {
-                $count++;
-            }
-        }
-
-        $this->outputLine('<b>%d</b> anonymous %s.', [$count, $count === 1 ? 'entry' : 'entries']);
-    }
-
-    /**
-     * Lists all named stash entries
-     *
-     * @return void
-     */
-    public function listCommand() {
-        $basePath = sprintf(FLOW_PATH_ROOT . 'Data/MagicWandStash/named');
+        $basePath = sprintf(FLOW_PATH_ROOT . 'Data/MagicWandStash');
 
         if (!is_dir($basePath)) {
             $this->outputLine('Stash is empty.');
@@ -183,38 +125,30 @@ class StashCommandController extends CommandController
     }
 
     /**
-     * Clear the stash
+     * Clear the whole stash
      *
-     * If provided with the optional parameter $type, this command will remove only anonymous entries ($type=anonymous),
-     * named entries ($type=named), or by default all (or $type=all)
-     *
-     * @param string $type
      * @return void
      */
-    public function clearCommand($type = 'all') {
-        switch ($type) {
-            case 'all':
-                $path = FLOW_PATH_ROOT . 'Data/MagicWandStash';
-                break;
+    public function clearCommand()
+    {
+        $startTimestamp = time();
 
-            case 'anonymous':
-            case 'named':
-                $path = FLOW_PATH_ROOT . 'Data/MagicWandStash/' . $type;
-                break;
-
-            default:
-                $this->outputLine('<error>You have to provide a correct type (all|anonymous|named)</error>');
-                $this->quit(1);
-
-        }
-
+        $path = FLOW_PATH_ROOT . 'Data/MagicWandStash';
         FileUtils::removeDirectoryRecursively($path);
 
-        $this->outputLine('<b>Done!</b> Cleanup successful.');
+        #################
+        # Final Message #
+        #################
+
+        $endTimestamp = time();
+        $duration = $endTimestamp - $startTimestamp;
+
+        $this->outputHeadLine('Done');
+        $this->outputLine('Cleanup successful in %s seconds', [$duration]);
     }
 
     /**
-     * Restores named stash entries
+     * Restores stash entries
      *
      * @param string $name The name of the stash entry that will be restored
      * @param boolean $yes confirm execution without further input
@@ -223,7 +157,7 @@ class StashCommandController extends CommandController
      */
     public function restoreCommand($name, $yes = false, $keepDb = false)
     {
-        $basePath = sprintf(FLOW_PATH_ROOT . 'Data/MagicWandStash/named/%s', $name);
+        $basePath = sprintf(FLOW_PATH_ROOT . 'Data/MagicWandStash/%s', $name);
         $this->restoreStashEntry($basePath, $name, $yes, true, $keepDb);
     }
 
@@ -234,11 +168,12 @@ class StashCommandController extends CommandController
      * @param boolean $yes confirm execution without further input
      * @return void
      */
-    public function removeCommand($name, $yes = false) {
-        $directory = FLOW_PATH_ROOT . 'Data/MagicWandStash/named/' . $name;
+    public function removeCommand($name, $yes = false)
+    {
+        $directory = FLOW_PATH_ROOT . 'Data/MagicWandStash/' . $name;
 
         if (!is_dir($directory)) {
-            $this->outputLine('<error>%s does not exist</error>', [$identifier]);
+            $this->outputLine('<error>%s does not exist</error>', [$name]);
             $this->quit(1);
         }
 
@@ -256,24 +191,40 @@ class StashCommandController extends CommandController
             }
         }
 
+        ###############
+        # Start Timer #
+        ###############
+
+
+        $startTimestamp = time();
+
         FileUtils::removeDirectoryRecursively($directory);
 
-        $this->outputLine('<b>Done!</b> Successfuly removed %s', [$name]);
+        #################
+        # Final Message #
+        #################
+
+        $endTimestamp = time();
+        $duration = $endTimestamp - $startTimestamp;
+
+        $this->outputHeadLine('Done');
+        $this->outputLine('Cleanup removed stash %s in %s seconds', [$name, $duration]);
+
     }
 
     /**
-     * Actual resore logic
+     * Actual restore logic
      *
      * @param string $source
-     * @param string $identifier
+     * @param string $name
      * @param boolean $force
      * @param boolean $keepDb
      * @return void
      */
-    protected function restoreStashEntry($source, $identifier, $force = false, $preserve = true, $keepDb = false)
+    protected function restoreStashEntry($source, $name, $force = false, $preserve = true, $keepDb = false)
     {
         if (!is_dir($source)) {
-            $this->outputLine('<error>%s does not exist</error>', [$identifier]);
+            $this->outputLine('<error>%s does not exist</error>', [$name]);
             $this->quit(1);
         }
 
@@ -295,100 +246,118 @@ class StashCommandController extends CommandController
             }
         }
 
+        ######################
+        # Measure Start Time #
+        ######################
+
+        $startTimestamp = time();
+
         #######################
         # Check Configuration #
         #######################
 
         $this->checkConfiguration();
 
+        ##################
+        # Define Secrets #
+        ##################
+
+        $this->addSecret($this->databaseConfiguration['user']);
+        $this->addSecret($this->databaseConfiguration['password']);
+
         ########################
-    		# Drop and Recreate DB #
-    		########################
+        # Drop and Recreate DB #
+        ########################
 
-    		if ($keepDb == false) {
-      			$this->outputHeadLine('2. Drop and Recreate DB');
-
-      			$emptyLocalDbSql = 'DROP DATABASE ' . $this->databaseConfiguration['dbname'] . '; CREATE DATABASE ' . $this->databaseConfiguration['dbname'] . ' collate utf8_unicode_ci;';
-      			$emptyLocalDbCommand = 'echo ' . escapeshellarg($emptyLocalDbSql) . '  | mysql --host=' . $this->databaseConfiguration['host'] . ' --user=' . $this->databaseConfiguration['user'] . ' --password=' . $this->databaseConfiguration['password'];
-
-      			$this->outputLine($emptyLocalDbCommand);
-      			$emptyLocalDbResult = shell_exec($emptyLocalDbCommand);
-      			$this->outputLine($emptyLocalDbResult);
-    		} else {
-    			   $this->outputHeadLine('2. Skipped (Drop and Recreate DB)');
-    		}
+        if ($keepDb == false) {
+            $this->outputHeadLine('Drop and Recreate DB');
+            $emptyLocalDbSql = 'DROP DATABASE ' . $this->databaseConfiguration['dbname'] . '; CREATE DATABASE ' . $this->databaseConfiguration['dbname'] . ' collate utf8_unicode_ci;';
+            $this->executeLocalShellCommand(
+                'echo %s | mysql --host=%s --user=%s --password=%s',
+                [
+                    escapeshellarg($emptyLocalDbSql),
+                    $this->databaseConfiguration['host'],
+                    $this->databaseConfiguration['user'],
+                    $this->databaseConfiguration['password']
+                ]
+            );
+        } else {
+            $this->outputHeadLine('Skipped (Drop and Recreate DB)');
+        }
 
         ######################
-    		#  Restore Database  #
-    		######################
+        #  Restore Database  #
+        ######################
 
-        $this->outputHeadLine('3. Restore Database');
-
-        $mysqlImportCommand = sprintf('mysql  --host="%s" --user="%s" --password="%s" %s < %s',
-            $this->databaseConfiguration['host'],
-            $this->databaseConfiguration['user'],
-            $this->databaseConfiguration['password'],
-            $this->databaseConfiguration['dbname'],
-            $source . '/database.sql'
+        $this->outputHeadLine('Restore Database');
+        $this->executeLocalShellCommand(
+            'mysql  --host="%s" --user="%s" --password="%s" %s < %s',
+            [
+                $this->databaseConfiguration['host'],
+                $this->databaseConfiguration['user'],
+                $this->databaseConfiguration['password'],
+                $this->databaseConfiguration['dbname'],
+                $source . '/database.sql'
+            ]
         );
 
-        $mysqlImportOutput = shell_exec($mysqlImportCommand);
-
-        $this->outputLine(' - Database imported ...');
-
         ################################
-    		# Restore Persistent Resources #
-    		################################
+        # Restore Persistent Resources #
+        ################################
 
-        $this->outputHeadLine('4. Restore Persistent Resources');
+        $this->outputHeadLine('Restore Persistent Resources');
+        $this->executeLocalShellCommand(
+            'rm -rf %s && cp -al %s %1$s',
+            [
+                FLOW_PATH_ROOT . 'Data/Persistent',
+                $source . '/persistent'
+            ]
+        );
 
-        FileUtils::removeDirectoryRecursively(FLOW_PATH_ROOT . 'Data/Persistent');
-        FileUtils::copyDirectoryRecursively($source . '/persistent', FLOW_PATH_ROOT . 'Data/Persistent');
-
-        $this->outputLine(' - Persistent Resources imported ...');
 
         if (!$preserve) {
             FileUtils::removeDirectoryRecursively($source);
         }
 
         ################
-    		# Clear Caches #
-    		################
+        # Clear Caches #
+        ################
 
-    		$this->outputHeadLine('5. Clear Caches');
-    		$flushCachesCommand = 'FLOW_CONTEXT=' . $this->bootstrap->getContext() . ' ./flow flow:cache:flush';
-    		$this->outputLine($flushCachesCommand);
-    		$flushCachesResult = shell_exec($flushCachesCommand);
-    		$this->outputLine($flushCachesResult);
+        $this->outputHeadLine('Clear Caches');
+        $this->executeLocalFlowCommand('flow:cache:flush');
 
-    		##############
-    		# Migrate DB #
-    		##############
 
-    		$this->outputHeadLine('6. Migrate cloned DB');
-    		$migrateDbCommand = 'FLOW_CONTEXT=' . $this->bootstrap->getContext() . ' ./flow doctrine:migrate';
-    		$this->outputLine($migrateDbCommand);
-    		$migrateDbResult = shell_exec($migrateDbCommand);
-    		$this->outputLine($migrateDbResult);
+        ##############
+        # Migrate DB #
+        ##############
 
-    		#####################
-    		# Publish Resources #
-    		#####################
+        $this->outputHeadLine('Migrate DB');
+        $this->executeLocalFlowCommand('doctrine:migrate');
 
-    		$this->outputHeadLine('7. Publish Resources');
-    		$publishResourcesCommand = 'FLOW_CONTEXT=' . $this->bootstrap->getContext() . ' ./flow resource:publish';
-    		$this->outputLine($publishResourcesCommand);
-    		$publishResourcesResult = shell_exec($publishResourcesCommand);
-    		$this->outputLine($publishResourcesResult);
+        #####################
+        # Publish Resources #
+        #####################
 
-        $this->outputLine();
-        $this->outputLine();
-        $this->outputLine('<b>Done!</b> Successfuly restored %s', [$identifier]);
+        $this->outputHeadLine('Publish Resources');
+        $this->executeLocalFlowCommand('resource:publish');
+
+        #################
+        # Final Message #
+        #################
+
+        $endTimestamp = time();
+        $duration = $endTimestamp - $startTimestamp;
+
+        $this->outputHeadLine('Done');
+        $this->outputLine('Successfuly restored %s in %s seconds', [$name, $duration]);
     }
 
+    /**
+     * @throws \TYPO3\Flow\Mvc\Exception\StopActionException
+     */
     protected function checkConfiguration()
     {
-        $this->outputHeadLine('1. Check Configuration');
+        $this->outputHeadLine('Check Configuration');
 
         if ($this->databaseConfiguration['driver'] !== 'pdo_mysql') {
             $this->outputLine(' only mysql is supported');
@@ -398,10 +367,4 @@ class StashCommandController extends CommandController
         $this->outputLine(' - Configuration seems ok ...');
     }
 
-    protected function outputHeadLine($line)
-    {
-  		$this->outputLine();
-  		$this->outputLine($line);
-  		$this->outputLine();
-  	}
 }
