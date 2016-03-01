@@ -67,7 +67,7 @@ class CloneCommandController extends AbstractCommandController
                 $this->clonePresets[$presetName]['port'],
                 $this->clonePresets[$presetName]['path'],
                 $this->clonePresets[$presetName]['context'],
-                ($this->clonePresets[$presetName]['postClone'] ? $this->clonePresets[$presetName]['postClone'] : NULL),
+                (isset($this->clonePresets[$presetName]['postClone']) ? $this->clonePresets[$presetName]['postClone'] : NULL),
                 $yes,
                 $keepDb
             );
