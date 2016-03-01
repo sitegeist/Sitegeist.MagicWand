@@ -2,6 +2,7 @@
     "name": "sitegeist/magicwand",
     "type": "typo3-flow-package",
     "description": "Tools that make the Flow/Neos development easier",
+    "license": "MIT",
     "require": {
         "typo3/flow": "*"
     },
