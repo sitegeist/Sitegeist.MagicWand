@@ -67,6 +67,7 @@ class CloneCommandController extends AbstractCommandController
                 $this->clonePresets[$presetName]['port'],
                 $this->clonePresets[$presetName]['path'],
                 $this->clonePresets[$presetName]['context'],
+                (isset($this->clonePresets[$presetName]['postClone']) ? $this->clonePresets[$presetName]['postClone'] : NULL),
                 $yes,
                 $keepDb
             );
@@ -84,6 +85,7 @@ class CloneCommandController extends AbstractCommandController
      * @param string $port ssh port
      * @param string $path path on the remote server
      * @param string $context flow_context on the remote server
+     * @param mixded $postClone command or array of commands to be executed after cloning
      * @param boolean $yes confirm execution without further input
      * @param boolean $keepDb skip dropping of database during sync
      */
@@ -93,6 +95,7 @@ class CloneCommandController extends AbstractCommandController
         $port,
         $path,
         $context = 'Production',
+        $postClone = NULL,
         $yes = false,
         $keepDb = false
     ) {
@@ -239,6 +242,21 @@ class CloneCommandController extends AbstractCommandController
 
         $this->outputHeadLine('Publish Resources');
         $this->executeLocalFlowCommand('resource:publish');
+
+        ##############
+        # Post Clone #
+        ##############
+
+        if ($postClone) {
+            $this->outputHeadLine('Execute post_clone commands');
+            if (is_array($postClone)) {
+                foreach($postClone as $postCloneCommand) {
+                    $this->executeLocalShellCommandWithFlowContext($postCloneCommand);
+                }
+            } else {
+                $this->executeLocalShellCommandWithFlowContext($postClone);
+            }
+        }
 
         #################
         # Final Message #
