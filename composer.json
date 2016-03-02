@@ -3,6 +3,18 @@
     "type": "typo3-flow-package",
     "description": "Tools that make the Flow/Neos development easier",
     "license": "MIT",
+    "authors": [
+        {
+            "name": "Wilhelm Behncke",
+            "email": "behncke@sitegeist.de",
+            "role": "Developer"
+        },
+        {
+            "name": "Martin Ficzel",
+            "email": "ficzel@sitegeist.de",
+            "role": "Developer"
+        }
+    ],
     "require": {
         "typo3/flow": "*"
     },
