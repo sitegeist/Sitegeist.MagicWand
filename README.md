@@ -53,6 +53,9 @@ Sitegeist:
 #        path: ~
 #        # flow-context on the remote server  
 #        context: Production
+#        # commands to execute after cloning      
+#        postClone:
+#         - './flow help'
 ```
 
 The settings should be added to the global `Settings.yaml` of the project, so that every
