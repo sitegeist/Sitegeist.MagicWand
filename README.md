@@ -87,6 +87,10 @@ the commands.**
 ```
 **Note:** Use this command on a regular basis, because your stash tends to grow **very** large.
 
+## Installation
+
+Sitegeist.Magicwand is available via packagist. Just add `"sitegeist/magicwand" : "~1.0"` to the require-dev section of the composer.json or run `composer require --dev sitegeist/magicwand`. We use semantic-versioning so every breaking change will increase the major-version number.
+
 ## Contribution
 
 We will gladly accept contributions especially to improve the rsync, and ssh-options for a specific preset. Please send us pull requests.
