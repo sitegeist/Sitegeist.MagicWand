@@ -44,6 +44,16 @@ class CloneCommandController extends AbstractCommandController
             foreach ($this->clonePresets as $presetName => $presetConfiguration) {
                 $this->outputHeadLine($presetName);
                 foreach ($presetConfiguration as $key => $value) {
+                    if (is_array($value)) {
+                        $this->outputLine(' - ' . $key . ':');
+
+                        foreach ($value as $line) {
+                            $this->outputLine('        ' . $line);
+                        }
+
+                        continue;
+                    }
+
                     $this->outputLine(' - ' . $key . ': ' . $value);
                 }
             }
