@@ -63,26 +63,31 @@ class CloneCommandController extends AbstractCommandController
     /**
      * Clone a flow setup as specified in Settings.yaml (Sitegeist.MagicWand.clonePresets ...)
      *
-     * @param string $presetName name of the preset from the settings
+     * @param string $presetName name of the preset from the settings, default: master
      * @param boolean $yes confirm execution without further input
      * @param boolean $keepDb skip dropping of database during sync
      */
-    public function presetCommand($presetName, $yes = false, $keepDb = false)
+    public function presetCommand($presetName = 'master', $yes = false, $keepDb = false)
     {
-        if ($this->clonePresets && array_key_exists($presetName, $this->clonePresets)) {
-            $this->outputLine('Clone by preset ' . $presetName);
-            $this->remoteHostCommand(
-                $this->clonePresets[$presetName]['host'],
-                $this->clonePresets[$presetName]['user'],
-                $this->clonePresets[$presetName]['port'],
-                $this->clonePresets[$presetName]['path'],
-                $this->clonePresets[$presetName]['context'],
-                (isset($this->clonePresets[$presetName]['postClone']) ? $this->clonePresets[$presetName]['postClone'] : NULL),
-                $yes,
-                $keepDb
-            );
+        if (count($this->clonePresets)>0 ) {
+            if ($this->clonePresets && array_key_exists($presetName, $this->clonePresets)) {
+                $this->outputLine('Clone by preset ' . $presetName);
+                $this->remoteHostCommand(
+                    $this->clonePresets[$presetName]['host'],
+                    $this->clonePresets[$presetName]['user'],
+                    $this->clonePresets[$presetName]['port'],
+                    $this->clonePresets[$presetName]['path'],
+                    $this->clonePresets[$presetName]['context'],
+                    (isset($this->clonePresets[$presetName]['postClone']) ? $this->clonePresets[$presetName]['postClone'] : NULL),
+                    $yes,
+                    $keepDb
+                );
+            } else {
+                $this->outputLine('The preset ' . $presetName . ' was not found!');
+                $this->quit(1);
+            }
         } else {
-            $this->outputLine('The preset ' . $presetName . ' was not found!');
+            $this->outputLine('No presets found!');
             $this->quit(1);
         }
     }
