@@ -271,7 +271,7 @@ class StashCommandController extends AbstractCommandController
 
         if ($keepDb == false) {
             $this->outputHeadLine('Drop and Recreate DB');
-            $emptyLocalDbSql = 'DROP DATABASE ' . $this->databaseConfiguration['dbname'] . '; CREATE DATABASE ' . $this->databaseConfiguration['dbname'] . ' collate utf8_unicode_ci;';
+            $emptyLocalDbSql = 'DROP DATABASE `' . $this->databaseConfiguration['dbname'] . '`; CREATE DATABASE `' . $this->databaseConfiguration['dbname'] . '` collate utf8_unicode_ci;';
             $this->executeLocalShellCommand(
                 'echo %s | mysql --host=%s --user=%s --password=%s',
                 [
