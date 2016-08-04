@@ -37,9 +37,10 @@ using the commands.**
 
 The presets that are defined in the configuration path. `Sitegeist.MagicWand.clonePresets`
 
-```
+```yaml
 Sitegeist:
   MagicWand:
+    flowCommand: './flow'
     clonePresets: []
 #      # the name of the preset for referencing on the clone:preset command
 #      master:
@@ -54,6 +55,9 @@ Sitegeist:
 #        # flow-context on the remote server  
 #        context: Production
 #        # commands to execute after cloning      
+#        # the flow cli command on the remote server
+#        # default is the main flowCommand-Setting
+#        flowCommand: ~ 
 #        postClone:
 #         - './flow help'
 ```
