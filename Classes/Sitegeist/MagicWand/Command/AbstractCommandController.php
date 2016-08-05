@@ -38,6 +38,11 @@ abstract class AbstractCommandController extends CommandController
      */
     protected $secrets = [];
 
+    /**
+     * @var string
+     * @Flow\InjectConfiguration("flowCommand")
+     */
+    protected $flowCommand;
 
     /**
      * @param string $commands
@@ -75,7 +80,7 @@ abstract class AbstractCommandController extends CommandController
      */
     protected function executeLocalFlowCommand($command, $arguments = [], $options = [])
     {
-        $flowCommand = sprintf('./flow %s', $command);
+        $flowCommand = sprintf($this->flowCommand . ' %s', $command);
         return $this->executeLocalShellCommandWithFlowContext($flowCommand, $arguments, $options);
     }
 

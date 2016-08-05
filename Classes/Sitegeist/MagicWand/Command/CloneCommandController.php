@@ -78,9 +78,10 @@ class CloneCommandController extends AbstractCommandController
                     $this->clonePresets[$presetName]['port'],
                     $this->clonePresets[$presetName]['path'],
                     $this->clonePresets[$presetName]['context'],
-                    (isset($this->clonePresets[$presetName]['postClone']) ? $this->clonePresets[$presetName]['postClone'] : NULL),
+                    (isset($this->clonePresets[$presetName]['postClone']) ? $this->clonePresets[$presetName]['postClone'] : null),
                     $yes,
-                    $keepDb
+                    $keepDb,
+                    (isset($this->clonePresets[$presetName]['flowCommand']) ? $this->clonePresets[$presetName]['flowCommand'] : null)
                 );
             } else {
                 $this->outputLine('The preset ' . $presetName . ' was not found!');
@@ -103,6 +104,7 @@ class CloneCommandController extends AbstractCommandController
      * @param mixded $postClone command or array of commands to be executed after cloning
      * @param boolean $yes confirm execution without further input
      * @param boolean $keepDb skip dropping of database during sync
+     * @param string $remoteFlowCommand the flow command to execute on the remote system
      */
     public function remoteHostCommand(
         $host,
@@ -110,10 +112,16 @@ class CloneCommandController extends AbstractCommandController
         $port,
         $path,
         $context = 'Production',
-        $postClone = NULL,
+        $postClone = null,
         $yes = false,
-        $keepDb = false
+        $keepDb = false,
+        $remoteFlowCommand = null
     ) {
+        // fallback
+        if ($remoteFlowCommand === null) {
+            $remoteFlowCommand = $this->flowCommand;
+        }
+
         // read local configuration
         $this->outputHeadLine('Read local configuration');
 
@@ -122,7 +130,7 @@ class CloneCommandController extends AbstractCommandController
         // read remote configuration
         $this->outputHeadLine('Fetch remote configuration');
         $remotePersistenceConfigurationYaml = $this->executeLocalShellCommand(
-            'ssh -p %s  %s@%s  "cd %s; FLOW_CONTEXT=%s ./flow configuration:show --type Settings --path TYPO3.Flow.persistence.backendOptions;"',
+            'ssh -p %s  %s@%s  "cd %s; FLOW_CONTEXT=%s ' . $remoteFlowCommand . ' configuration:show --type Settings --path TYPO3.Flow.persistence.backendOptions;"',
             [
                 $port,
                 $user,

@@ -1,5 +1,7 @@
 Sitegeist:
   MagicWand:
+    # the local flow command
+    flowCommand: './flow'
     clonePresets: []
 #      # the name of the preset for referencing on the clone:preset command
 #      master: 
@@ -13,6 +15,9 @@ Sitegeist:
 #        path: ~
 #        # flow-context on the remote server  
 #        context: Production
-#        # commands to execute after cloning      
+#        # the flow cli command on the remote server
+#        # default is the main flowCommand-Setting
+#        flowCommand: ~
+#        # commands to execute after cloning
 #        postClone:
 #         - './flow help'
