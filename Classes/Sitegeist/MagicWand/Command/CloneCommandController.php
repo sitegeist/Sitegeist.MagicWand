@@ -63,11 +63,11 @@ class CloneCommandController extends AbstractCommandController
     /**
      * Clone a flow setup as specified in Settings.yaml (Sitegeist.MagicWand.clonePresets ...)
      *
-     * @param string $presetName name of the preset from the settings, default: master
+     * @param string $presetName name of the preset from the settings
      * @param boolean $yes confirm execution without further input
      * @param boolean $keepDb skip dropping of database during sync
      */
-    public function presetCommand($presetName = 'master', $yes = false, $keepDb = false)
+    public function presetCommand($presetName, $yes = false, $keepDb = false)
     {
         if (count($this->clonePresets)>0 ) {
             if ($this->clonePresets && array_key_exists($presetName, $this->clonePresets)) {

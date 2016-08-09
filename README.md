@@ -1,23 +1,4 @@
 # Sitegeist.MagicWand
-
-## Important Note:
-
-In the current release v1.0.4, we recognized an issue with the standard handling of parameters in Flow CLI. The following format currently does not work:
-
-```
-./flow clone:preset presetname
-```
-
-In order to make MagicWand work as expected, you'll instead have to use:
-
-```
-./flow clone:preset --preset-name presetname
-```
-
-v1.0.4 introduces the possibility to replace the standard flow command on remote systems, which sometimes becomes necessary in setups with multiple php versions (see #4). Also it fixes a issue with SQL statements, that were not properly escaped (see #3) If you don't require these features, you can decide to just skip this version until the next release.
-
-We're on it folks ;)
-
 ### Tools that make the Flow/Neos development easier
 
 This package is intended to be used on development systems and should **NEVER** be
