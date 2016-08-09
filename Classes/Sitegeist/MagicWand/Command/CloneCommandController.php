@@ -195,7 +195,7 @@ class CloneCommandController extends AbstractCommandController
 
             $emptyLocalDbSql = 'DROP DATABASE `' . $this->databaseConfiguration['dbname'] . '`; CREATE DATABASE `' . $this->databaseConfiguration['dbname'] . '` collate utf8_unicode_ci;';
             $this->executeLocalShellCommand(
-                'echo %s | mysql --host=%s --user=%s --password=%s',
+                'echo %s | mysql --host=\'%s\' --user=\'%s\' --password=\'%s\'',
                 [
                     escapeshellarg($emptyLocalDbSql),
                     $this->databaseConfiguration['host'],
@@ -213,7 +213,7 @@ class CloneCommandController extends AbstractCommandController
 
         $this->outputHeadLine('Transfer Database');
         $this->executeLocalShellCommand(
-            'ssh -p %s %s@%s "mysqldump --add-drop-table --host=%s --user=%s --password=%s %s" | mysql --host=%s --user=%s --password=%s %s',
+            'ssh -p %s %s@%s \'mysqldump --add-drop-table --host=\'"\'"\'%s\'"\'"\' --user=\'"\'"\'%s\'"\'"\' --password=\'"\'"\'%s\'"\'"\' \'"\'"\'%s\'"\'"\'\' | mysql --host=\'%s\' --user=\'%s\' --password=\'%s\' \'%s\'',
             [
                 $port,
                 $user,
