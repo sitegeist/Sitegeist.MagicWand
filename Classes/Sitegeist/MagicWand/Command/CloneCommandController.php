@@ -7,7 +7,6 @@ namespace Sitegeist\MagicWand\Command;
  *                                                                        */
 
 use TYPO3\Flow\Annotations as Flow;
-use TYPO3\Flow\Configuration\ConfigurationManager;
 use TYPO3\Flow\Utility\Arrays;
 use TYPO3\Flow\Core\Bootstrap;
 
@@ -22,12 +21,6 @@ class CloneCommandController extends AbstractCommandController
      * @var Bootstrap
      */
     protected $bootstrap;
-
-    /**
-     * @Flow\Inject
-     * @var ConfigurationManager
-     */
-    protected $configurationManager;
 
     /**
      * @var string
