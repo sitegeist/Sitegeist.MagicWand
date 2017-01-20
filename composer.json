@@ -1,6 +1,6 @@
 {
     "name": "sitegeist/magicwand",
-    "type": "typo3-flow-package",
+    "type": "neos-package",
     "description": "Tools that make the Flow/Neos development easier",
     "license": "MIT",
     "authors": [
@@ -16,7 +16,7 @@
         }
     ],
     "require": {
-        "typo3/flow": "*"
+        "neos/flow": "*"
     },
     "autoload": {
         "psr-0": {
