@@ -6,9 +6,9 @@ namespace Sitegeist\MagicWand\Command;
  *                                                                        *
  *                                                                        */
 
-use TYPO3\Flow\Annotations as Flow;
-use TYPO3\Flow\Core\Bootstrap;
-use TYPO3\Flow\Cli\CommandController;
+use Neos\Flow\Annotations as Flow;
+use Neos\Flow\Core\Bootstrap;
+use Neos\Flow\Cli\CommandController;
 
 abstract class AbstractCommandController extends CommandController
 {
@@ -17,7 +17,7 @@ abstract class AbstractCommandController extends CommandController
     const HIDE_COMMAND = 2;
 
     /**
-     * @Flow\InjectConfiguration(path="persistence.backendOptions", package="TYPO3.Flow")
+     * @Flow\InjectConfiguration(path="persistence.backendOptions", package="Neos.Flow")
      * @var array
      */
     protected $databaseConfiguration;

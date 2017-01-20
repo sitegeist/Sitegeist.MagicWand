@@ -6,9 +6,9 @@ namespace Sitegeist\MagicWand\Command;
  *                                                                        *
  *                                                                        */
 
-use TYPO3\Flow\Annotations as Flow;
-use TYPO3\Flow\Utility\Arrays;
-use TYPO3\Flow\Core\Bootstrap;
+use Neos\Flow\Annotations as Flow;
+use Neos\Flow\Utility\Arrays;
+use Neos\Flow\Core\Bootstrap;
 
 /**
  * @Flow\Scope("singleton")
@@ -123,7 +123,7 @@ class CloneCommandController extends AbstractCommandController
         // read remote configuration
         $this->outputHeadLine('Fetch remote configuration');
         $remotePersistenceConfigurationYaml = $this->executeLocalShellCommand(
-            'ssh -p %s  %s@%s  "cd %s; FLOW_CONTEXT=%s ' . $remoteFlowCommand . ' configuration:show --type Settings --path TYPO3.Flow.persistence.backendOptions;"',
+            'ssh -p %s  %s@%s  "cd %s; FLOW_CONTEXT=%s ' . $remoteFlowCommand . ' configuration:show --type Settings --path Neos.Flow.persistence.backendOptions;"',
             [
                 $port,
                 $user,
@@ -288,7 +288,7 @@ class CloneCommandController extends AbstractCommandController
     /**
      * @param $remotePersistenceConfiguration
      * @param $this ->databaseConfiguration
-     * @throws \TYPO3\Flow\Mvc\Exception\StopActionException
+     * @throws \Neos\Flow\Mvc\Exception\StopActionException
      */
     protected function checkConfiguration($remotePersistenceConfiguration)
     {

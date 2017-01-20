@@ -6,9 +6,9 @@ namespace Sitegeist\MagicWand\Command;
  *                                                                        *
  *                                                                        */
 
-use TYPO3\Flow\Annotations as Flow;
-use TYPO3\Flow\Utility\Files as FileUtils;
-use TYPO3\Flow\Core\Bootstrap;
+use Neos\Flow\Annotations as Flow;
+use Neos\Flow\Utility\Files as FileUtils;
+use Neos\Flow\Core\Bootstrap;
 
 /**
  * @Flow\Scope("singleton")
@@ -353,7 +353,7 @@ class StashCommandController extends AbstractCommandController
     }
 
     /**
-     * @throws \TYPO3\Flow\Mvc\Exception\StopActionException
+     * @throws \Neos\Flow\Mvc\Exception\StopActionException
      */
     protected function checkConfiguration()
     {
