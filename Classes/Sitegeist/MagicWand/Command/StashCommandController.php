@@ -7,7 +7,7 @@ namespace Sitegeist\MagicWand\Command;
  *                                                                        */
 
 use Neos\Flow\Annotations as Flow;
-use Neos\Flow\Utility\Files as FileUtils;
+use Neos\Utility\Files as FileUtils;
 use Neos\Flow\Core\Bootstrap;
 
 /**
