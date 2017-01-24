@@ -43,8 +43,8 @@ Sitegeist:
     flowCommand: './flow'
     rsyncParams:
         # Additional params in the form of:
-        # - '-shortParam' OR
-        # - '-shortParamShortParamShortParam' OR
+        # - '-shortParam' AND/OR
+        # - '-shortParamShortParamShortParam' AND/OR
         # - '--longParam'
         - '-kLr'
     clonePresets: []
