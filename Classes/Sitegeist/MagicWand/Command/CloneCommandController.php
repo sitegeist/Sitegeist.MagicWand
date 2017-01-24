@@ -228,9 +228,10 @@ class CloneCommandController extends AbstractCommandController
 
         $this->outputHeadLine('Transfer Files');
         $this->executeLocalShellCommand(
-            'rsync -e "ssh -p %s" -kLr %s@%s:%s/* %s',
+            'rsync -e "ssh -p %s" %s %s@%s:%s/* %s',
             [
                 $port,
+                $this->getRsyncParams(),
                 $user,
                 $host,
                 $remoteDataPersistentPath,
@@ -302,5 +303,17 @@ class CloneCommandController extends AbstractCommandController
             $this->quit(1);
         }
         $this->outputLine(' - Configuration seems ok ...');
+    }
+
+    /**
+     * @return string
+     */
+    protected function getRsyncParams()
+    {
+        foreach ($this->rsyncParams as $index => $param) {
+            index == 0 ? $rsyncParams = $param : $rsyncParams .= ' ' . $param;
+        }
+
+        return $rsyncParams;
     }
 }

@@ -41,6 +41,12 @@ The presets that are defined in the configuration path. `Sitegeist.MagicWand.clo
 Sitegeist:
   MagicWand:
     flowCommand: './flow'
+    rsyncParams:
+        # Additional params in the form of:
+        # - '-shortParam' AND/OR
+        # - '-shortParamShortParamShortParam' AND/OR
+        # - '--longParam'
+        - '-kLr'
     clonePresets: []
 #      # the name of the preset for referencing on the clone:preset command
 #      master:
