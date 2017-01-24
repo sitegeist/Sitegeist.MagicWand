@@ -228,7 +228,7 @@ class CloneCommandController extends AbstractCommandController
 
         $this->outputHeadLine('Transfer Files');
         $this->executeLocalShellCommand(
-            'rsync -e "ssh -p %s" -kLrz %s@%s:%s/* %s',
+            'rsync -e "ssh -p %s" -kLrz --progress %s@%s:%s/* %s',
             [
                 $port,
                 $user,
