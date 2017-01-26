@@ -319,7 +319,7 @@ class CloneCommandController extends AbstractCommandController
     protected function renderRsyncParams()
     {
         foreach ($this->rsyncParams as $index => $param) {
-            $index == 0 ? $rsyncParams = $param : $rsyncParams .= ' ' . $param;
+            $index === 0 ? $rsyncParams = $param : $rsyncParams .= ' ' . $param;
         }
 
         return $rsyncParams;
