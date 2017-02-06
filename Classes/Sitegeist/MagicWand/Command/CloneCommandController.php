@@ -75,7 +75,7 @@ class CloneCommandController extends AbstractCommandController
                     $this->clonePresets[$presetName]['host'],
                     $this->clonePresets[$presetName]['user'],
                     $this->clonePresets[$presetName]['port'],
-                    $this->renderRsyncParams(),
+                    implode(' ', $this->rsyncParams),
                     $this->clonePresets[$presetName]['path'],
                     $this->clonePresets[$presetName]['context'],
                     (isset($this->clonePresets[$presetName]['postClone']) ? $this->clonePresets[$presetName]['postClone'] : null),
@@ -311,17 +311,5 @@ class CloneCommandController extends AbstractCommandController
             $this->quit(1);
         }
         $this->outputLine(' - Configuration seems ok ...');
-    }
-
-    /**
-     * @return string
-     */
-    protected function renderRsyncParams()
-    {
-        foreach ($this->rsyncParams as $index => $param) {
-            $index === 0 ? $rsyncParams = $param : $rsyncParams .= ' ' . $param;
-        }
-
-        return $rsyncParams;
     }
 }
