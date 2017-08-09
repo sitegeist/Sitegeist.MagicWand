@@ -179,6 +179,14 @@ class CloneCommandController extends AbstractCommandController
 
         $this->checkConfiguration($remotePersistenceConfiguration);
 
+        ################################################
+        # Fallback to default MySQL port if not given. #
+        ################################################
+
+        if ( ! isset($this->databaseConfiguration['port'])) {
+            $this->databaseConfiguration['port'] = 3306;
+        }
+
         ########################
         # Drop and Recreate DB #
         ########################
