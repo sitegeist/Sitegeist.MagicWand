@@ -29,6 +29,12 @@ class CloneCommandController extends AbstractCommandController
     protected $clonePresets;
 
     /**
+     * @var string
+     * @Flow\InjectConfiguration("rsyncParams")
+     */
+    protected $rsyncParams;
+
+    /**
      * Show the list of predefined clone configurations
      */
     public function listCommand()
@@ -69,6 +75,7 @@ class CloneCommandController extends AbstractCommandController
                     $this->clonePresets[$presetName]['host'],
                     $this->clonePresets[$presetName]['user'],
                     $this->clonePresets[$presetName]['port'],
+                    implode(' ', $this->rsyncParams),
                     $this->clonePresets[$presetName]['path'],
                     $this->clonePresets[$presetName]['context'],
                     (isset($this->clonePresets[$presetName]['postClone']) ? $this->clonePresets[$presetName]['postClone'] : null),
@@ -103,6 +110,7 @@ class CloneCommandController extends AbstractCommandController
         $host,
         $user,
         $port,
+        $rsyncParams,
         $path,
         $context = 'Production',
         $postClone = null,
@@ -238,9 +246,10 @@ class CloneCommandController extends AbstractCommandController
 
         $this->outputHeadLine('Transfer Files');
         $this->executeLocalShellCommand(
-            'rsync -e "ssh -p %s" -kLr %s@%s:%s/* %s',
+            'rsync -e "ssh -p %s" %s %s@%s:%s/* %s',
             [
                 $port,
+                $rsyncParams,
                 $user,
                 $host,
                 $remoteDataPersistentPath,
