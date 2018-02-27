@@ -183,6 +183,10 @@ class CloneCommandController extends AbstractCommandController
         # Fallback to default MySQL port if not given. #
         ################################################
 
+        if ( ! isset($remotePersistenceConfiguration['port'])) {
+            $remotePersistenceConfiguration['port'] = 3306;
+        }
+
         if ( ! isset($this->databaseConfiguration['port'])) {
             $this->databaseConfiguration['port'] = 3306;
         }
@@ -215,12 +219,13 @@ class CloneCommandController extends AbstractCommandController
 
         $this->outputHeadLine('Transfer Database');
         $this->executeLocalShellCommand(
-            'ssh -p %s %s@%s \'mysqldump --add-drop-table --host=\'"\'"\'%s\'"\'"\' --user=\'"\'"\'%s\'"\'"\' --password=\'"\'"\'%s\'"\'"\' \'"\'"\'%s\'"\'"\'\' | mysql --host=\'%s\' --port=\'%s\' --user=\'%s\' --password=\'%s\' \'%s\'',
+            'ssh -p %s %s@%s \'mysqldump --add-drop-table --host=\'"\'"\'%s\'"\'"\' --port=\'"\'"\'%d\'"\'"\' --user=\'"\'"\'%s\'"\'"\' --password=\'"\'"\'%s\'"\'"\' \'"\'"\'%s\'"\'"\'\' | mysql --host=\'%s\' --port=\'%s\' --user=\'%s\' --password=\'%s\' \'%s\'',
             [
                 $port,
                 $user,
                 $host,
                 $remotePersistenceConfiguration['host'],
+                $remotePersistenceConfiguration['port'],
                 $remotePersistenceConfiguration['user'],
                 $remotePersistenceConfiguration['password'],
                 $remotePersistenceConfiguration['dbname'],
