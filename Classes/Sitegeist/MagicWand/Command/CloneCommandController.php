@@ -248,6 +248,40 @@ class CloneCommandController extends AbstractCommandController
             ]
         );
 
+        #########################
+        # Transfer Translations #
+        #########################
+
+        $this->outputHeadLine('Transfer Translations');
+
+        $remoteDataTranslationsPath = $path . '/Data/Translations';
+        $localDataTranslationsPath = FLOW_PATH_ROOT . 'Data/Translations';
+
+        // If the translation directory is available print true - because we didn't get the return value here
+        $translationsAvailable = trim(
+            $this->executeLocalShellCommand(
+                'ssh %s@%s -p %s "[ -d %s ] && echo true"',
+                [
+                    $user,
+                    $host,
+                    $port,
+                    $remoteDataTranslationsPath]
+            )
+        );
+
+        if ($translationsAvailable === 'true') {
+            $this->executeLocalShellCommand(
+                'rsync -e "ssh -p %s" -kLr %s@%s:%s/* %s',
+                [
+                    $port,
+                    $user,
+                    $host,
+                    $remoteDataTranslationsPath,
+                    $localDataTranslationsPath
+                ]
+            );
+        }
+
         ################
         # Clear Caches #
         ################
