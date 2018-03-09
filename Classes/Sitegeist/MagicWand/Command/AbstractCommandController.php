@@ -2,7 +2,7 @@
 namespace Sitegeist\MagicWand\Command;
 
 /*                                                                        *
- * This script belongs to the TYPO3 Flow package "Sitegeist.MagicWand".   *
+ * This script belongs to the Neos Flow package "Sitegeist.MagicWand".    *
  *                                                                        *
  *                                                                        */
 
