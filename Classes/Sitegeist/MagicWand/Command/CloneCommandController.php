@@ -2,7 +2,7 @@
 namespace Sitegeist\MagicWand\Command;
 
 /*                                                                        *
- * This script belongs to the TYPO3 Flow package "Sitegeist.MagicWand".   *
+ * This script belongs to the Neos Flow package "Sitegeist.MagicWand".    *
  *                                                                        *
  *                                                                        */
 
@@ -62,7 +62,7 @@ class CloneCommandController extends AbstractCommandController
      */
     public function presetCommand($presetName, $yes = false, $keepDb = false)
     {
-        if (count($this->clonePresets)>0 ) {
+        if (count($this->clonePresets) > 0) {
             if ($this->clonePresets && array_key_exists($presetName, $this->clonePresets)) {
                 $this->outputLine('Clone by preset ' . $presetName);
                 $this->remoteHostCommand(
@@ -71,10 +71,14 @@ class CloneCommandController extends AbstractCommandController
                     $this->clonePresets[$presetName]['port'],
                     $this->clonePresets[$presetName]['path'],
                     $this->clonePresets[$presetName]['context'],
-                    (isset($this->clonePresets[$presetName]['postClone']) ? $this->clonePresets[$presetName]['postClone'] : null),
+                    (isset($this->clonePresets[$presetName]['postClone']) ?
+                        $this->clonePresets[$presetName]['postClone'] : null
+                    ),
                     $yes,
                     $keepDb,
-                    (isset($this->clonePresets[$presetName]['flowCommand']) ? $this->clonePresets[$presetName]['flowCommand'] : null)
+                    (isset($this->clonePresets[$presetName]['flowCommand']) ?
+                        $this->clonePresets[$presetName]['flowCommand'] : null
+                    )
                 );
             } else {
                 $this->outputLine('The preset ' . $presetName . ' was not found!');
@@ -123,7 +127,9 @@ class CloneCommandController extends AbstractCommandController
         // read remote configuration
         $this->outputHeadLine('Fetch remote configuration');
         $remotePersistenceConfigurationYaml = $this->executeLocalShellCommand(
-            'ssh -p %s  %s@%s  "cd %s; FLOW_CONTEXT=%s ' . $remoteFlowCommand . ' configuration:show --type Settings --path Neos.Flow.persistence.backendOptions;"',
+            'ssh -p %s  %s@%s  "cd %s; FLOW_CONTEXT=%s '
+            . $remoteFlowCommand
+            . ' configuration:show --type Settings --path Neos.Flow.persistence.backendOptions;"',
             [
                 $port,
                 $user,
@@ -187,7 +193,7 @@ class CloneCommandController extends AbstractCommandController
             $remotePersistenceConfiguration['port'] = 3306;
         }
 
-        if ( ! isset($this->databaseConfiguration['port'])) {
+        if (!isset($this->databaseConfiguration['port'])) {
             $this->databaseConfiguration['port'] = 3306;
         }
 
@@ -198,7 +204,12 @@ class CloneCommandController extends AbstractCommandController
         if ($keepDb == false) {
             $this->outputHeadLine('Drop and Recreate DB');
 
-            $emptyLocalDbSql = 'DROP DATABASE `' . $this->databaseConfiguration['dbname'] . '`; CREATE DATABASE `' . $this->databaseConfiguration['dbname'] . '` collate utf8_unicode_ci;';
+            $emptyLocalDbSql = 'DROP DATABASE `'
+                . $this->databaseConfiguration['dbname']
+                . '`; CREATE DATABASE `'
+                . $this->databaseConfiguration['dbname']
+                . '` collate utf8_unicode_ci;';
+
             $this->executeLocalShellCommand(
                 'echo %s | mysql --host=\'%s\' --port=\'%s\' --user=\'%s\' --password=\'%s\'',
                 [
@@ -281,7 +292,7 @@ class CloneCommandController extends AbstractCommandController
         if ($postClone) {
             $this->outputHeadLine('Execute post_clone commands');
             if (is_array($postClone)) {
-                foreach($postClone as $postCloneCommand) {
+                foreach ($postClone as $postCloneCommand) {
                     $this->executeLocalShellCommandWithFlowContext($postCloneCommand);
                 }
             } else {
@@ -308,7 +319,8 @@ class CloneCommandController extends AbstractCommandController
     protected function checkConfiguration($remotePersistenceConfiguration)
     {
         $this->outputHeadLine('Check Configuration');
-        if ($remotePersistenceConfiguration['driver'] != 'pdo_mysql' && $this->databaseConfiguration['driver'] != 'pdo_mysql') {
+        if ($remotePersistenceConfiguration['driver'] != 'pdo_mysql'
+            && $this->databaseConfiguration['driver'] != 'pdo_mysql') {
             $this->outputLine(' only mysql is supported');
             $this->quit(1);
         }
