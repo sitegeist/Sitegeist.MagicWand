@@ -32,7 +32,8 @@ class StashCommandController extends AbstractCommandController
         #     Build Paths     #
         #######################
 
-        $basePath = sprintf(FLOW_PATH_ROOT . 'Data/MagicWandStash/%s',
+        $basePath = sprintf(
+            FLOW_PATH_ROOT . 'Data/MagicWandStash/%s',
             $name
         );
 
@@ -209,7 +210,6 @@ class StashCommandController extends AbstractCommandController
 
         $this->outputHeadLine('Done');
         $this->outputLine('Cleanup removed stash %s in %s seconds', [$name, $duration]);
-
     }
 
     /**
@@ -271,7 +271,13 @@ class StashCommandController extends AbstractCommandController
 
         if ($keepDb == false) {
             $this->outputHeadLine('Drop and Recreate DB');
-            $emptyLocalDbSql = 'DROP DATABASE `' . $this->databaseConfiguration['dbname'] . '`; CREATE DATABASE `' . $this->databaseConfiguration['dbname'] . '` collate utf8_unicode_ci;';
+
+            $emptyLocalDbSql = 'DROP DATABASE `'
+                . $this->databaseConfiguration['dbname']
+                . '`; CREATE DATABASE `'
+                . $this->databaseConfiguration['dbname']
+                . '` collate utf8_unicode_ci;';
+            
             $this->executeLocalShellCommand(
                 'echo %s | mysql --host=%s --user=%s --password=%s',
                 [
@@ -366,5 +372,4 @@ class StashCommandController extends AbstractCommandController
 
         $this->outputLine(' - Configuration seems ok ...');
     }
-
 }
