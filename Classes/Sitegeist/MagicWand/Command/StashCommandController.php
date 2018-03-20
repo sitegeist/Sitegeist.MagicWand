@@ -9,14 +9,40 @@ namespace Sitegeist\MagicWand\Command;
 use Neos\Flow\Annotations as Flow;
 use Neos\Utility\Files as FileUtils;
 use Neos\Flow\Core\Bootstrap;
+use Sitegeist\MagicWand\Status\Service as StatusService;
 
 /**
  * @Flow\Scope("singleton")
  */
 class StashCommandController extends AbstractCommandController
 {
+    /**
+     * @Flow\Inject
+     * @var StatusService
+     */
+    protected $statusService;
 
+    /**
+     * Show the current stash status
+     *
+     * @param string $dateFormat
+     * @return void
+     */
+    public function statusCommand($dateFormat = 'g:ia \o\n l jS F Y')
+    {
+        $manifest = $this->statusService->getCurrentManifest();
+        $name = $manifest->get('stash', 'name');
 
+        if (!$name) {
+            $this->outputLine('No current stash data found.');
+        } else  {
+            $this->outputLine();
+            $this->outputLine('Current Stash Entry: <b>%s</b>', [$name]);
+            $this->outputLine();
+
+            $this->outputLine('Most recently restored at %s', [$manifest->get('stash', 'latest')->format($dateFormat)]);
+        }
+    }
 
     /**
      * Creates a new stash entry with the given name.
@@ -277,7 +303,7 @@ class StashCommandController extends AbstractCommandController
                 . '`; CREATE DATABASE `'
                 . $this->databaseConfiguration['dbname']
                 . '` collate utf8_unicode_ci;';
-            
+
             $this->executeLocalShellCommand(
                 'echo %s | mysql --host=%s --user=%s --password=%s',
                 [
