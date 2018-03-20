@@ -29,27 +29,42 @@ class CloneCommandController extends AbstractCommandController
     protected $clonePresets;
 
     /**
+    /**
      * Show the list of predefined clone configurations
+     *
+     * @return void
      */
     public function listCommand()
     {
         if ($this->clonePresets) {
             foreach ($this->clonePresets as $presetName => $presetConfiguration) {
                 $this->outputHeadLine($presetName);
-                foreach ($presetConfiguration as $key => $value) {
-                    if (is_array($value)) {
-                        $this->outputLine(' - ' . $key . ':');
-
-                        foreach ($value as $line) {
-                            $this->outputLine('        ' . $line);
-                        }
-
-                        continue;
-                    }
-
-                    $this->outputLine(' - ' . $key . ': ' . $value);
-                }
+                $this->outputPreset($presetName, $presetConfiguration);
             }
+        }
+    }
+
+    /**
+     * Print structured CLI output for a clone preset
+     *
+     * @param string $presetName
+     * @param array $presetConfiguration
+     * @return void
+     */
+    protected function outputPreset($presetName, $presetConfiguration)
+    {
+        foreach ($presetConfiguration as $key => $value) {
+            if (is_array($value)) {
+                $this->outputLine(' - ' . $key . ':');
+
+                foreach ($value as $line) {
+                    $this->outputLine('        ' . $line);
+                }
+
+                continue;
+            }
+
+            $this->outputLine(' - ' . $key . ': ' . $value);
         }
     }
 
