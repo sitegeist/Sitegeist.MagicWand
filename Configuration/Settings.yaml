@@ -4,16 +4,16 @@ Sitegeist:
     flowCommand: './flow'
     clonePresets: []
 #      # the name of the preset for referencing on the clone:preset command
-#      master: 
+#      master:
 #        # hostname or ip of the server to clone from
 #        host: ~
-#        # ssh username 
+#        # ssh username
 #        user: ~
 #        # ssh port
 #        port: ~
 #        # path on the remote server
 #        path: ~
-#        # flow-context on the remote server  
+#        # flow-context on the remote server
 #        context: Production
 #        # the flow cli command on the remote server
 #        # default is the main flowCommand-Setting
@@ -21,3 +21,4 @@ Sitegeist:
 #        # commands to execute after cloning
 #        postClone:
 #         - './flow help'
+    pathToMetadata: '%FLOW_ROOTPATH%/.magicwand'
