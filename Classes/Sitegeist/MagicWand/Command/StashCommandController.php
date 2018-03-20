@@ -123,7 +123,7 @@ class StashCommandController extends AbstractCommandController
 
         $this->outputHeadLine('Backup MagicWand Meta Data');
         $this->executeLocalShellCommand(
-            'cp -al %s %s',
+            'cp -ar %s %s',
             [
                 $this->pathToMetadata,
                 $metaDataDestination

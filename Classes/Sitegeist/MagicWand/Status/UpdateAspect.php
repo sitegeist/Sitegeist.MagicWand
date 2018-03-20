@@ -26,6 +26,19 @@ class UpdateAspect
         $presetName = $joinPoint->getMethodArgument('presetName');
 
         $this->service->getCurrentManifest()->set('clone', 'preset', $presetName);
+        $this->service->getCurrentManifest()->set('stash', 'name', null);
+        $this->service->saveToDisk($this->service->getCurrentManifest());
+    }
+
+    /**
+     * @Flow\After("method(Sitegeist\MagicWand\Command\StashCommandController->createCommand())")
+     * @param JoinPointInterface $joinPoint
+     * @return void
+     */
+    public function createStashStatus(JoinPointInterface $joinPoint)
+    {
+        $name = $joinPoint->getMethodArgument('name');
+        $this->service->getCurrentManifest()->set('stash', 'name', $name);
         $this->service->saveToDisk($this->service->getCurrentManifest());
     }
 
@@ -37,9 +50,11 @@ class UpdateAspect
     public function updateStashStatus(JoinPointInterface $joinPoint)
     {
         $name = $joinPoint->getMethodArgument('name');
+        $manifest = $this->service->getStashedManifest($name) ?: $this->service->getCurrentManifest();
 
-        $this->service->getCurrentManifest()->set('stash', 'name', $name);
-        $this->service->saveToDisk($this->service->getCurrentManifest());
+        $manifest->set('stash', 'name', $name);
+
+        $this->service->saveToDisk($manifest);
     }
 
     /**
