@@ -2,13 +2,13 @@
 namespace Sitegeist\MagicWand\Status;
 
 use Neos\Flow\Annotations as Flow;
-use Neos\Flow\Aop\JoinpointInterface;
+use Neos\Flow\Aop\JoinPointInterface;
 
 /**
  * @Flow\Aspect
  * @Flow\Scope("singleton")
  */
-class Aspect
+class UpdateAspect
 {
     /**
      * @Flow\Inject
@@ -17,24 +17,24 @@ class Aspect
     protected $service;
 
     /**
-     * @Flow\After("method(Sitegeist\MagicWand\CloneCommandController->presetCommand())")
-     * @param JoinpointInterface $joinPoint
+     * @Flow\After("method(Sitegeist\MagicWand\Command\CloneCommandController->presetCommand())")
+     * @param JoinPointInterface $joinPoint
      * @return void
      */
-    public function updateCloneStatus(JoinpointInterface $joinPoint)
+    public function updateCloneStatus(JoinPointInterface $joinPoint)
     {
-        $presetName = $joinPoint->getMethodArgument('preset');
+        $presetName = $joinPoint->getMethodArgument('presetName');
 
         $this->service->getCurrentManifest()->set('clone', 'preset', $presetName);
         $this->service->saveToDisk($this->service->getCurrentManifest());
     }
 
     /**
-     * @Flow\After("method(Sitegeist\MagicWand\StashCommandController->restoreCommand())")
-     * @param JoinpointInterface $joinPoint
+     * @Flow\After("method(Sitegeist\MagicWand\Command\StashCommandController->restoreCommand())")
+     * @param JoinPointInterface $joinPoint
      * @return void
      */
-    public function updateStashStatus(JoinpointInterface $joinPoint)
+    public function updateStashStatus(JoinPointInterface $joinPoint)
     {
         $name = $joinPoint->getMethodArgument('name');
 
@@ -43,22 +43,22 @@ class Aspect
     }
 
     /**
-     * @Flow\After("method(Sitegeist\MagicWand\StashCommandController->clearCommand())")
-     * @param JoinpointInterface $joinPoint
+     * @Flow\After("method(Sitegeist\MagicWand\Command\StashCommandController->clearCommand())")
+     * @param JoinPointInterface $joinPoint
      * @return void
      */
-    public function clearStashStatus(JoinpointInterface $joinPoint)
+    public function clearStashStatus(JoinPointInterface $joinPoint)
     {
         $this->service->getCurrentManifest()->set('stash', 'name', null);
         $this->service->saveToDisk($this->service->getCurrentManifest());
     }
 
     /**
-     * @Flow\After("method(Sitegeist\MagicWand\StashCommandController->removeCommand())")
-     * @param JoinpointInterface $joinPoint
+     * @Flow\After("method(Sitegeist\MagicWand\Command\StashCommandController->removeCommand())")
+     * @param JoinPointInterface $joinPoint
      * @return void
      */
-    public function clearStashStatusForEntry(JoinpointInterface $joinPoint)
+    public function clearStashStatusForEntry(JoinPointInterface $joinPoint)
     {
         $currentName = $this->service->getCurrentManifest()->get('stash', 'name');
         $name = $joinPoint->getMethodArgument('name');
