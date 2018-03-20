@@ -9,6 +9,7 @@ namespace Sitegeist\MagicWand\Command;
 use Neos\Flow\Annotations as Flow;
 use Neos\Utility\Arrays;
 use Neos\Flow\Core\Bootstrap;
+use Sitegeist\MagicWand\Status\Service as StatusService;
 
 /**
  * @Flow\Scope("singleton")
@@ -29,6 +30,39 @@ class CloneCommandController extends AbstractCommandController
     protected $clonePresets;
 
     /**
+     * @Flow\Inject
+     * @var StatusService
+     */
+    protected $statusService;
+
+    /**
+     * Show the current clone status
+     *
+     * @param string $dateFormat
+     * @return void
+     */
+    public function statusCommand($dateFormat = 'g:ia \o\n l jS F Y')
+    {
+        $manifest = $this->statusService->getCurrentManifest();
+        $presetName = $manifest->get('clone', 'preset');
+
+        if (!$presetName) {
+            $this->outputLine('<b>clone:preset</b> has never been used.');
+        } else  {
+
+            if (array_key_exists($presetName, $this->clonePresets)) {
+                $this->outputLine();
+                $this->outputLine('Current Preset: <b>%s</b>', [$presetName]);
+                $this->outputPreset($presetName, $this->clonePresets[$presetName]);
+                $this->outputLine();
+            } else {
+                $this->outputLine('The preset "%s" does not appear to be configured.', [$presetName]);
+            }
+
+            $this->outputLine('Most recently cloned at %s', [$manifest->get('clone', 'latest')->format($dateFormat)]);
+        }
+    }
+
     /**
      * Show the list of predefined clone configurations
      *
