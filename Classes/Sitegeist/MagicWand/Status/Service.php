@@ -52,6 +52,25 @@ class Service
     }
 
     /**
+     * Get stashed manifest
+     * @param string $stashName
+     * @return Manifest
+     */
+    public function getStashedManifest($stashName)
+    {
+        $manifestFile = Files::concatenatePaths([
+            FLOW_PATH_ROOT,
+            'Data/MagicWandStash',
+            $stashName,
+            '.magicwand/status'
+        ]);
+
+        if (file_exists($manifestFile)) {
+            return Manifest::createFromDisk($manifestFile);
+        }
+    }
+
+    /**
      * Get persisted Manifest from Disk
      *
      * @return Manifest
