@@ -21,4 +21,4 @@ Sitegeist:
 #        # commands to execute after cloning
 #        postClone:
 #         - './flow help'
-    pathToMetadata: '%FLOW_ROOTPATH%/.magicwand'
+    pathToMetadata: '%FLOW_PATH_ROOT%/.magicwand'
