@@ -23,6 +23,12 @@ class StashCommandController extends AbstractCommandController
     protected $statusService;
 
     /**
+     * @Flow\InjectConfiguration(path="pathToMetadata")
+     * @var string
+     */
+    protected $pathToMetadata;
+
+    /**
      * Show the current stash status
      *
      * @param string $dateFormat
@@ -65,6 +71,7 @@ class StashCommandController extends AbstractCommandController
 
         $databaseDestination = $basePath . '/database.sql';
         $persistentDestination = $basePath . '/persistent/';
+        $metaDataDestination = $basePath . '/.magicwand/';
 
         FileUtils::createDirectoryRecursively($basePath);
 
@@ -107,6 +114,19 @@ class StashCommandController extends AbstractCommandController
             [
                 FLOW_PATH_ROOT . 'Data/Persistent',
                 $persistentDestination
+            ]
+        );
+
+        ##############################
+        # Backup MagicWand Meta Data #
+        ##############################
+
+        $this->outputHeadLine('Backup MagicWand Meta Data');
+        $this->executeLocalShellCommand(
+            'cp -al %s %s',
+            [
+                $this->pathToMetadata,
+                $metaDataDestination
             ]
         );
 
