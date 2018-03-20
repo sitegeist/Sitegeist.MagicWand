@@ -15,7 +15,7 @@ class Service
     protected $current;
 
     /**
-     * @Flow\InjectConfiguration(pah="pathToMetadata")
+     * @Flow\InjectConfiguration(path="pathToMetadata")
      * @var string
      */
     protected $pathToMetadata;
@@ -42,7 +42,7 @@ class Service
      *
      * @return Manifest
      */
-    public function getCurrent()
+    public function getCurrentManifest()
     {
         if (!$this->current) {
             $this->current = $this->getFromDisk() ?? $this->getEmpty();
