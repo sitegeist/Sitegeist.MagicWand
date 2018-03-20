@@ -5,7 +5,7 @@ namespace Sitegeist\MagicWand\Status;
  * An object representing a manifest file that contains status information for the most recently
  * performed clone and stash operations
  */
-class Manifest
+class Manifest implements \JsonSerializable
 {
     /**
      * Allowed sections for the manifest file
@@ -22,9 +22,9 @@ class Manifest
     protected $manifest;
 
     /**
-     * Private constructor: Use static create* factory methods!
+     * Protected constructor: Use static create* factory methods!
      */
-    private function __construct(array $manifest)
+    protected function __construct(array $manifest)
     {
         $this->manifest = $manifest;
     }
@@ -55,10 +55,25 @@ class Manifest
     public static function createFromDisk($fileName)
     {
         $contents = @file_get_contents($fileName);
-        $json = @json_decode($fileName, true);
+        $json = @json_decode($contents, true);
 
-        if ($json) {
-            return new static($json);
+        if (is_array($json)) {
+            return new static([
+                'clone' => array_merge(
+                    array_key_exists('clone', $json) ? $json['clone'] : [],
+                    [
+                        'latest' => array_key_exists('clone', $json) && array_key_exists('latest', $json['clone']) ?
+                            new \DateTime('@' . $json['clone']['latest']) : new \DateTime()
+                    ]
+                ),
+                'stash' => array_merge(
+                    array_key_exists('stash', $json) ? $json['stash'] : [],
+                    [
+                        'latest' => array_key_exists('stash', $json) && array_key_exists('latest', $json['stash']) ?
+                            new \DateTime('@' . $json['stash']['latest']) : new \DateTime()
+                    ]
+                )
+            ]);
         }
 
         throw new \Exception(sprintf('Could not read "%s"', $fileName), 1521548892);
@@ -107,5 +122,24 @@ class Manifest
         }
 
         return $this->manifest[$section][$property];
+    }
+
+    /**
+     * Specify data which should be serialized to JSON
+     *
+     * @return array
+     */
+    public function jsonSerialize()
+    {
+        return [
+            'clone' => [
+                'latest' => $this->get('clone', 'latest')->getTimestamp(),
+                'preset' => $this->get('clone', 'preset')
+            ],
+            'stash' => [
+                'latest' => $this->get('stash', 'latest')->getTimestamp(),
+                'name' => $this->get('stash', 'name')
+            ]
+        ];
     }
 }
