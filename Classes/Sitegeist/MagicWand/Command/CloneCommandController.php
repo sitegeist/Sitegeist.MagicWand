@@ -47,7 +47,7 @@ class CloneCommandController extends AbstractCommandController
         $presetName = $manifest->get('clone', 'preset');
 
         if (!$presetName) {
-            $this->outputLine('<b>clone:preset</b> has never been used.');
+            $this->outputLine('No current preset data found.');
         } else  {
 
             if (array_key_exists($presetName, $this->clonePresets)) {
