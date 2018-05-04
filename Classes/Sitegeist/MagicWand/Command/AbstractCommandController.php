@@ -96,9 +96,10 @@ abstract class AbstractCommandController extends CommandController
     }
 
     /**
-     * @param $line
+     * @param string $line
+     * @param array $arguments
      */
-    protected function outputLine($line = '', array $arguments = [])
+    protected function outputLine(string $line = '', array $arguments = [])
     {
         $filteredLine = $line;
         foreach ($this->secrets as $secret) {
