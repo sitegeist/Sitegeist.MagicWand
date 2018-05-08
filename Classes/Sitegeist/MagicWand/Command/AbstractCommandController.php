@@ -56,7 +56,7 @@ abstract class AbstractCommandController extends CommandController
             $this->outputLine($customizedCommand);
         }
         $customizedCommandResult = shell_exec($customizedCommand);
-        if (!in_array(self::HIDE_RESULT, $options)) {
+        if (is_string($customizedCommandResult) && !in_array(self::HIDE_RESULT, $options)) {
             $this->outputLine($customizedCommandResult);
         }
         return $customizedCommandResult;

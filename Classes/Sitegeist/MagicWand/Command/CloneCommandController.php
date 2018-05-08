@@ -305,6 +305,14 @@ class CloneCommandController extends AbstractCommandController
         $this->outputHeadLine('Clear Caches');
         $this->executeLocalFlowCommand('flow:cache:flush');
 
+        ##################
+        # Set DB charset #
+        ##################
+        if ($this->databaseConfiguration['driver'] == 'pdo_mysql' && $remotePersistenceConfiguration['charset'] != 'utf8mb4') {
+            $this->outputHeadLine('Set DB charset');
+            $this->executeLocalFlowCommand('database:setcharset');
+        }
+
         ##############
         # Migrate DB #
         ##############
@@ -358,7 +366,9 @@ class CloneCommandController extends AbstractCommandController
             $this->outputLine(' only mysql is supported');
             $this->quit(1);
         }
-        if ($remotePersistenceConfiguration['charset'] != $this->databaseConfiguration['charset']) {
+        if (in_array($remotePersistenceConfiguration['charset'], ['utf8','utf8mb4']) && in_array($this->databaseConfiguration['charset'], ['utf8','utf8mb4'])) {
+            // we accept utf8 and utf8mb4 beeing similar enough
+        } else if ($remotePersistenceConfiguration['charset'] != $this->databaseConfiguration['charset']) {
             $this->outputLine(' the databases have to use the same charset');
             $this->quit(1);
         }
