@@ -10,7 +10,7 @@ section of your composer.json**.
 * Wilhelm Behncke - behncke@sitegeist.de
 * Martin Ficzel - ficzel@sitegeist.de
 
-*The development and the public-releases of this package is generously sponsored by our employer http://www.sitegeist.de.*
+*The development and the public-releases of this package is generously sponsored by our employer https://www.sitegeist.de.*
 
 ## Easy and fast cloning of Flow and Neos Installations
 
