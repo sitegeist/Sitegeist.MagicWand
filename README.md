@@ -50,6 +50,8 @@ Sitegeist:
 #        user: ~
 #        # ssh port
 #        port: ~
+#        # ssh options
+#        sshOptions: ~
 #        # path on the remote server
 #        path: ~
 #        # flow-context on the remote server  
