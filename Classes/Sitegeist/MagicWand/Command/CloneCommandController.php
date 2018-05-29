@@ -264,7 +264,7 @@ class CloneCommandController extends AbstractCommandController
             'rsync -e "ssh -p %s %s" -kLr %s@%s:%s/* %s',
             [
                 $port,
-                $sshOptions,
+                str_replace('"', "'", $sshOptions),
                 $user,
                 $host,
                 $remoteDataPersistentPath,
@@ -299,7 +299,7 @@ class CloneCommandController extends AbstractCommandController
                 'rsync -e "ssh -p %s %s" -kLr %s@%s:%s/* %s',
                 [
                     $port,
-                    $sshOptions,
+                    escapeshellarg($sshOptions),
                     $user,
                     $host,
                     $remoteDataTranslationsPath,
