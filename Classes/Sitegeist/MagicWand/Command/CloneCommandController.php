@@ -78,6 +78,9 @@ class CloneCommandController extends AbstractCommandController
                     $keepDb,
                     (isset($this->clonePresets[$presetName]['flowCommand']) ?
                         $this->clonePresets[$presetName]['flowCommand'] : null
+                    ),
+                    (isset($this->clonePresets[$presetName]['sshOptions']) ?
+                        $this->clonePresets[$presetName]['sshOptions'] : ''
                     )
                 );
             } else {
@@ -102,6 +105,7 @@ class CloneCommandController extends AbstractCommandController
      * @param boolean $yes confirm execution without further input
      * @param boolean $keepDb skip dropping of database during sync
      * @param string $remoteFlowCommand the flow command to execute on the remote system
+     * @param string $sshOptions additional options for the ssh command
      */
     public function remoteHostCommand(
         $host,
@@ -112,7 +116,8 @@ class CloneCommandController extends AbstractCommandController
         $postClone = null,
         $yes = false,
         $keepDb = false,
-        $remoteFlowCommand = null
+        $remoteFlowCommand = null,
+        $sshOptions = ''
     ) {
         // fallback
         if ($remoteFlowCommand === null) {
@@ -127,11 +132,12 @@ class CloneCommandController extends AbstractCommandController
         // read remote configuration
         $this->outputHeadLine('Fetch remote configuration');
         $remotePersistenceConfigurationYaml = $this->executeLocalShellCommand(
-            'ssh -p %s  %s@%s  "cd %s; FLOW_CONTEXT=%s '
+            'ssh -p %s %s %s@%s "cd %s; FLOW_CONTEXT=%s '
             . $remoteFlowCommand
             . ' configuration:show --type Settings --path Neos.Flow.persistence.backendOptions;"',
             [
                 $port,
+                $sshOptions,
                 $user,
                 $host,
                 $path,
@@ -189,7 +195,7 @@ class CloneCommandController extends AbstractCommandController
         # Fallback to default MySQL port if not given. #
         ################################################
 
-        if ( ! isset($remotePersistenceConfiguration['port'])) {
+        if (!isset($remotePersistenceConfiguration['port'])) {
             $remotePersistenceConfiguration['port'] = 3306;
         }
 
@@ -230,9 +236,10 @@ class CloneCommandController extends AbstractCommandController
 
         $this->outputHeadLine('Transfer Database');
         $this->executeLocalShellCommand(
-            'ssh -p %s %s@%s \'mysqldump --add-drop-table --host=\'"\'"\'%s\'"\'"\' --port=\'"\'"\'%d\'"\'"\' --user=\'"\'"\'%s\'"\'"\' --password=\'"\'"\'%s\'"\'"\' \'"\'"\'%s\'"\'"\'\' | mysql --host=\'%s\' --port=\'%s\' --user=\'%s\' --password=\'%s\' \'%s\'',
+            'ssh -p %s %s %s@%s \'mysqldump --add-drop-table --host=\'"\'"\'%s\'"\'"\' --port=\'"\'"\'%d\'"\'"\' --user=\'"\'"\'%s\'"\'"\' --password=\'"\'"\'%s\'"\'"\' \'"\'"\'%s\'"\'"\'\' | mysql --host=\'%s\' --port=\'%s\' --user=\'%s\' --password=\'%s\' \'%s\'',
             [
                 $port,
+                $sshOptions,
                 $user,
                 $host,
                 $remotePersistenceConfiguration['host'],
@@ -254,9 +261,10 @@ class CloneCommandController extends AbstractCommandController
 
         $this->outputHeadLine('Transfer Files');
         $this->executeLocalShellCommand(
-            'rsync -e "ssh -p %s" -kLr %s@%s:%s/* %s',
+            'rsync -e "ssh -p %s %s" -kLr %s@%s:%s/* %s',
             [
                 $port,
+                addslashes($sshOptions),
                 $user,
                 $host,
                 $remoteDataPersistentPath,
@@ -276,20 +284,22 @@ class CloneCommandController extends AbstractCommandController
         // If the translation directory is available print true - because we didn't get the return value here
         $translationsAvailable = trim(
             $this->executeLocalShellCommand(
-                'ssh %s@%s -p %s "[ -d %s ] && echo true"',
+                'ssh -p %s %s %s@%s "[ -d %s ] && echo true"',
                 [
+                    $port,
+                    $sshOptions,
                     $user,
                     $host,
-                    $port,
                     $remoteDataTranslationsPath]
             )
         );
 
         if ($translationsAvailable === 'true') {
             $this->executeLocalShellCommand(
-                'rsync -e "ssh -p %s" -kLr %s@%s:%s/* %s',
+                'rsync -e "ssh -p %s %s" -kLr %s@%s:%s/* %s',
                 [
                     $port,
+                    addslashes($sshOptions),
                     $user,
                     $host,
                     $remoteDataTranslationsPath,
