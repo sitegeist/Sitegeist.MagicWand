@@ -118,7 +118,8 @@ class CloneCommandController extends AbstractCommandController
         $keepDb = false,
         $remoteFlowCommand = null,
         $sshOptions = ''
-    ) {
+    )
+    {
         // fallback
         if ($remoteFlowCommand === null) {
             $remoteFlowCommand = $this->flowCommand;
@@ -373,13 +374,13 @@ class CloneCommandController extends AbstractCommandController
         $this->outputHeadLine('Check Configuration');
         if ($remotePersistenceConfiguration['driver'] != 'pdo_mysql'
             && $this->databaseConfiguration['driver'] != 'pdo_mysql') {
-            $this->outputLine(' only mysql is supported');
+            $this->outputLine(sprintf('<error>Error:</error>  Only mysql is supported. Remote: "%s" Local: "%s" configured.', $remotePersistenceConfiguration['driver'], $this->databaseConfiguration['driver']));
             $this->quit(1);
         }
-        if (in_array($remotePersistenceConfiguration['charset'], ['utf8','utf8mb4']) && in_array($this->databaseConfiguration['charset'], ['utf8','utf8mb4'])) {
-            // we accept utf8 and utf8mb4 beeing similar enough
+        if (in_array($remotePersistenceConfiguration['charset'], ['utf8', 'utf8mb4']) && in_array($this->databaseConfiguration['charset'], ['utf8', 'utf8mb4'])) {
+            // we accept utf8 and utf8mb4 being similar enough
         } else if ($remotePersistenceConfiguration['charset'] != $this->databaseConfiguration['charset']) {
-            $this->outputLine(' the databases have to use the same charset');
+            $this->outputLine(sprintf('<error>Error:</error> The databases have to use the same charset. Remote: "%s", Local: "%s" configured.', $remotePersistenceConfiguration['charset'], $this->databaseConfiguration['charset']));
             $this->quit(1);
         }
         $this->outputLine(' - Configuration seems ok ...');
