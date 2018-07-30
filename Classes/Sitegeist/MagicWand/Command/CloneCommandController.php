@@ -236,7 +236,7 @@ class CloneCommandController extends AbstractCommandController
 
         $this->outputHeadLine('Transfer Database');
         $this->executeLocalShellCommand(
-            'ssh -p %s %s %s@%s \'mysqldump --add-drop-table --host=\'"\'"\'%s\'"\'"\' --port=\'"\'"\'%d\'"\'"\' --user=\'"\'"\'%s\'"\'"\' --password=\'"\'"\'%s\'"\'"\' \'"\'"\'%s\'"\'"\'\' | mysql --host=\'%s\' --port=\'%s\' --user=\'%s\' --password=\'%s\' \'%s\'',
+            'ssh -p %s %s %s@%s \'mysqldump --single-transaction --add-drop-table --host=\'"\'"\'%s\'"\'"\' --port=\'"\'"\'%d\'"\'"\' --user=\'"\'"\'%s\'"\'"\' --password=\'"\'"\'%s\'"\'"\' \'"\'"\'%s\'"\'"\'\' | mysql --host=\'%s\' --port=\'%s\' --user=\'%s\' --password=\'%s\' \'%s\'',
             [
                 $port,
                 $sshOptions,
