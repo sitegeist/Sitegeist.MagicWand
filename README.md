@@ -44,6 +44,9 @@ Sitegeist:
     clonePresets: []
 #      # the name of the preset for referencing on the clone:preset command
 #      master:
+#        # if set to default it is cloneable by calling
+#        # './flow clone:preset' without a presetName
+#        default: true
 #        # hostname or ip of the server to clone from
 #        host: ~
 #        # ssh username
@@ -54,12 +57,12 @@ Sitegeist:
 #        sshOptions: ~
 #        # path on the remote server
 #        path: ~
-#        # flow-context on the remote server  
+#        # flow-context on the remote server
 #        context: Production
-#        # commands to execute after cloning      
+#        # commands to execute after cloning
 #        # the flow cli command on the remote server
 #        # default is the main flowCommand-Setting
-#        flowCommand: ~ 
+#        flowCommand: ~
 #        postClone:
 #         - './flow help'
 ```
