@@ -41,12 +41,11 @@ The presets that are defined in the configuration path. `Sitegeist.MagicWand.clo
 Sitegeist:
   MagicWand:
     flowCommand: './flow'
+#   # preset which is used by the clone:default command
+#   defaultPreset: 'master'
     clonePresets: []
 #      # the name of the preset for referencing on the clone:preset command
 #      master:
-#        # if set to default it is cloneable by calling
-#        # './flow clone:preset' without a presetName
-#        default: true
 #        # hostname or ip of the server to clone from
 #        host: ~
 #        # ssh username

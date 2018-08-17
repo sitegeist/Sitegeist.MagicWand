@@ -29,6 +29,12 @@ class CloneCommandController extends AbstractCommandController
     protected $clonePresets;
 
     /**
+     * @var string
+     * @Flow\InjectConfiguration("defaultPreset")
+     */
+    protected $defaultPreset;
+
+    /**
      * Show the list of predefined clone configurations
      */
     public function listCommand()
@@ -54,65 +60,49 @@ class CloneCommandController extends AbstractCommandController
     }
 
     /**
+     * Clones the default preset
+     *
+     * @param boolean $yes confirm execution without further input
+     * @param boolean $keepDb skip dropping of database during sync
+     */
+    public function defaultCommand(bool $yes = false, bool $keepDb = false) : void
+    {
+        $this->presetCommand($this->defaultPreset, $yes, $keepDb);
+    }
+
+    /**
      * Clone a flow setup as specified in Settings.yaml (Sitegeist.MagicWand.clonePresets ...)
      *
      * @param string $presetName name of the preset from the settings
      * @param boolean $yes confirm execution without further input
      * @param boolean $keepDb skip dropping of database during sync
      */
-    public function presetCommand($presetName = '', $yes = false, $keepDb = false)
+    public function presetCommand($presetName, $yes = false, $keepDb = false)
     {
         if (count($this->clonePresets) > 0) {
-            if ($presetName !== '') {
-                if ($this->clonePresets && array_key_exists($presetName, $this->clonePresets)) {
-                    $this->outputLine('Clone by preset ' . $presetName);
-                    $this->remoteHostCommand(
-                        $this->clonePresets[$presetName]['host'],
-                        $this->clonePresets[$presetName]['user'],
-                        $this->clonePresets[$presetName]['port'],
-                        $this->clonePresets[$presetName]['path'],
-                        $this->clonePresets[$presetName]['context'],
-                        (isset($this->clonePresets[$presetName]['postClone']) ?
-                            $this->clonePresets[$presetName]['postClone'] : null
-                        ),
-                        $yes,
-                        $keepDb,
-                        (isset($this->clonePresets[$presetName]['flowCommand']) ?
-                            $this->clonePresets[$presetName]['flowCommand'] : null
-                        ),
-                        (isset($this->clonePresets[$presetName]['sshOptions']) ?
-                            $this->clonePresets[$presetName]['sshOptions'] : ''
-                        )
-                    );
-                } else {
-                    $this->outputLine('The preset ' . $presetName . ' was not found!');
-                    $this->quit(1);
-                }
-            } else {
-                $defaultPreset = $this->getDefaultPreset();
-                if (count($defaultPreset) === 0) {
-                    $this->outputLine('No default preset found!');
-                    $this->quit(1);
-                }
-                $this->outputLine('Clone by default preset');
+            if ($this->clonePresets && array_key_exists($presetName, $this->clonePresets)) {
+                $this->outputLine('Clone by preset ' . $presetName);
                 $this->remoteHostCommand(
-                    $defaultPreset['host'],
-                    $defaultPreset['user'],
-                    $defaultPreset['port'],
-                    $defaultPreset['path'],
-                    $defaultPreset['context'],
-                    (isset($defaultPreset['postClone']) ?
-                        $defaultPreset['postClone'] : null
+                    $this->clonePresets[$presetName]['host'],
+                    $this->clonePresets[$presetName]['user'],
+                    $this->clonePresets[$presetName]['port'],
+                    $this->clonePresets[$presetName]['path'],
+                    $this->clonePresets[$presetName]['context'],
+                    (isset($this->clonePresets[$presetName]['postClone']) ?
+                        $this->clonePresets[$presetName]['postClone'] : null
                     ),
                     $yes,
                     $keepDb,
-                    (isset($defaultPreset['flowCommand']) ?
-                        $defaultPreset['flowCommand'] : null
+                    (isset($this->clonePresets[$presetName]['flowCommand']) ?
+                        $this->clonePresets[$presetName]['flowCommand'] : null
                     ),
-                    (isset($defaultPreset['sshOptions']) ?
-                        $defaultPreset['sshOptions'] : ''
+                    (isset($this->clonePresets[$presetName]['sshOptions']) ?
+                        $this->clonePresets[$presetName]['sshOptions'] : ''
                     )
                 );
+            } else {
+                $this->outputLine('The preset ' . $presetName . ' was not found!');
+                $this->quit(1);
             }
         } else {
             $this->outputLine('No presets found!');
@@ -410,23 +400,5 @@ class CloneCommandController extends AbstractCommandController
             $this->quit(1);
         }
         $this->outputLine(' - Configuration seems ok ...');
-    }
-
-    /**
-     * Returns the default preset if one is configured
-     *
-     * @return array
-     */
-    protected function getDefaultPreset(): array
-    {
-        $defaultPreset = [];
-        foreach ($this->clonePresets as $clonePreset) {
-            if (isset($clonePreset['default']) && $clonePreset['default'] === true) {
-                $defaultPreset = $clonePreset;
-                break;
-            }
-        }
-
-        return $defaultPreset;
     }
 }

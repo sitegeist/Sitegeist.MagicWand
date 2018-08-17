@@ -2,6 +2,8 @@ Sitegeist:
   MagicWand:
     # the local flow command
     flowCommand: './flow'
+#   # preset which is used by the clone:default command
+#   defaultPreset: 'master'
     clonePresets: []
 #      # the name of the preset for referencing on the clone:preset command
 #      master:
