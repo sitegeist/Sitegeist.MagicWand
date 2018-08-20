@@ -67,6 +67,11 @@ class CloneCommandController extends AbstractCommandController
      */
     public function defaultCommand(bool $yes = false, bool $keepDb = false) : void
     {
+        if ($this->defaultPreset === null || $this->defaultPreset === '') {
+            $this->outputLine('There is no default preset configured!');
+            $this->quit(1);
+        }
+
         $this->presetCommand($this->defaultPreset, $yes, $keepDb);
     }
 
