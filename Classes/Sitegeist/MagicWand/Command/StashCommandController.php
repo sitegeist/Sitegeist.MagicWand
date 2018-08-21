@@ -61,7 +61,7 @@ class StashCommandController extends AbstractCommandController
 
         $this->outputHeadLine('Backup Database');
         $this->executeLocalShellCommand(
-            'mysqldump --add-drop-table --host="%s" --user="%s" --password="%s" %s > %s',
+            'mysqldump --single-transaction --add-drop-table --host="%s" --user="%s" --password="%s" %s > %s',
             [
                 $this->databaseConfiguration['host'],
                 $this->databaseConfiguration['user'],
