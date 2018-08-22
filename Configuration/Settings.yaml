@@ -7,9 +7,6 @@ Sitegeist:
     clonePresets: []
 #      # the name of the preset for referencing on the clone:preset command
 #      master:
-#        # if set to default it is cloneable by calling
-#        # './flow clone:preset' without a presetName
-#        default: true
 #        # hostname or ip of the server to clone from
 #        host: ~
 #        # ssh username
