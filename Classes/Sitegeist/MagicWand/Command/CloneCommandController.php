@@ -29,6 +29,12 @@ class CloneCommandController extends AbstractCommandController
     protected $clonePresets;
 
     /**
+     * @var string
+     * @Flow\InjectConfiguration("defaultPreset")
+     */
+    protected $defaultPreset;
+
+    /**
      * Show the list of predefined clone configurations
      */
     public function listCommand()
@@ -51,6 +57,22 @@ class CloneCommandController extends AbstractCommandController
                 }
             }
         }
+    }
+
+    /**
+     * Clones the default preset
+     *
+     * @param boolean $yes confirm execution without further input
+     * @param boolean $keepDb skip dropping of database during sync
+     */
+    public function defaultCommand(bool $yes = false, bool $keepDb = false) : void
+    {
+        if ($this->defaultPreset === null || $this->defaultPreset === '') {
+            $this->outputLine('There is no default preset configured!');
+            $this->quit(1);
+        }
+
+        $this->presetCommand($this->defaultPreset, $yes, $keepDb);
     }
 
     /**
