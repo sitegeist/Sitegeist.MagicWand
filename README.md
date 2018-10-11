@@ -41,29 +41,34 @@ The presets that are defined in the configuration path. `Sitegeist.MagicWand.clo
 Sitegeist:
   MagicWand:
     flowCommand: './flow'
-#   # preset which is used by the clone:default command
-#   defaultPreset: 'master'
-    clonePresets: []
-#      # the name of the preset for referencing on the clone:preset command
-#      master:
-#        # hostname or ip of the server to clone from
-#        host: ~
-#        # ssh username
-#        user: ~
-#        # ssh port
-#        port: ~
-#        # ssh options
-#        sshOptions: ~
-#        # path on the remote server
-#        path: ~
-#        # flow-context on the remote server
-#        context: Production
-#        # commands to execute after cloning
-#        # the flow cli command on the remote server
-#        # default is the main flowCommand-Setting
-#        flowCommand: ~
-#        postClone:
-#         - './flow help'
+
+    # preset which is used by the clone:default command
+    defaultPreset: 'master'
+
+    # available presets
+    clonePresets:
+
+       # the name of the preset for referencing on the clone:preset command
+      master:
+        # hostname or ip of the server to clone from
+        host: ~
+        # ssh username
+        user: ~
+        # ssh port
+        port: ~
+        # ssh options
+        sshOptions: ~
+        # path on the remote server
+        path: ~
+        # flow-context on the remote server
+        context: Production
+
+        # the flow cli command on the remote server
+        # default is the main flowCommand-Setting
+        flowCommand: ~
+
+        # commands to execute after cloning like ./flow user:create ...
+        postClone: []
 ```
 
 The settings should be added to the global `Settings.yaml` of the project, so that every
