@@ -19,7 +19,7 @@ class SimpleDBAL {
      * @param string $database
      * @return string
      */
-    public function buildCmd(string $driver, string $host, int $port, string $username, string $password, string $database): string
+    public function buildCmd(string $driver, ?string $host, int $port, string $username, string $password, string $database): string
     {
         if ($driver === 'pdo_mysql') {
             return sprintf('mysql --host=%s --port=%s --user=%s --password=%s %s', escapeshellarg($host), escapeshellarg($port), escapeshellarg($username), escapeshellarg($password), escapeshellarg($database));
@@ -37,7 +37,7 @@ class SimpleDBAL {
      * @param string $database
      * @return string
      */
-    public function buildDumpCmd(string $driver, string $host, int $port, string $username, string $password, string $database): string
+    public function buildDumpCmd(string $driver, ?string $host, int $port, string $username, string $password, string $database): string
     {
         if ($driver === 'pdo_mysql') {
             return sprintf('mysqldump --single-transaction --add-drop-table --host=%s --port=%d --user=%s --password=%s %s', escapeshellarg($host), escapeshellarg($port), escapeshellarg($username), escapeshellarg($password), escapeshellarg($database));
