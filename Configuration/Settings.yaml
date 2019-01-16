@@ -25,3 +25,29 @@ Sitegeist:
 #        # commands to execute after cloning
 #        postClone:
 #         - './flow help'
+
+Neos:
+  Flow:
+    resource:
+
+      storages:
+        magicWandProxyStorage:
+          storage: 'Sitegeist\MagicWand\ResourceManagement\Storage\ProxyStorage'
+          storageOptions:
+            localStorage: defaultPersistentResourcesStorage
+
+      targets:
+        magicWandProxyTarget:
+          target: 'Sitegeist\MagicWand\ResourceManagement\Target\ProxyTarget'
+          targetOptions:
+            localTarget: localWebDirectoryPersistentResourcesTarget
+
+      #
+      # alter the settings for the persistent collection
+      # to use the proxy storage and target instead
+      #
+      collections:
+        persistent:
+          storage: 'magicWandProxyStorage'
+          target: 'magicWandProxyTarget'
+
