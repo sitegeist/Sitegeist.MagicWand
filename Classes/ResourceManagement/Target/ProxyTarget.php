@@ -22,14 +22,14 @@ class ProxyTarget implements TargetInterface
     protected $name;
 
     /**
-     * @var string
-     */
-    protected $localTargetName;
-
-    /**
      * @var TargetInterface
      */
     protected $localTarget;
+
+    /**
+     * @var string
+     */
+    protected $localTargetName;
 
     /**
      * ProxyTarget constructor.
@@ -39,25 +39,14 @@ class ProxyTarget implements TargetInterface
     public function __construct($name, $options)
     {
         $this->name = $name;
-
         if (!isset($options['localTarget'])) {
             throw new Exception(sprintf('localTarget-option is required in target %s', $name), 1547635863);
         }
-
         $this->localTargetName = $options['localTarget'];
     }
 
     public function initializeObject() {
-        $localTargetDefinition = Arrays::getValueByPath($this->settings, 'targets.' . $this->localTargetName );
-        if (!isset($localTargetDefinition['target'])) {
-            throw new Exception(sprintf('The configuration for the resource target "%s" defined in your settings has no valid "target" option. Please check the configuration syntax and make sure to specify a valid target class name.', $targetName), 1361467838);
-        }
-        if (!class_exists($localTargetDefinition['target'])) {
-            throw new Exception(sprintf('The configuration for the resource target "%s" defined in your settings has not defined a valid "target" option. Please check the configuration syntax and make sure that the specified class "%s" really exists.', $targetName, $targetDefinition['target']), 1361467839);
-        }
-        $localTargetOptions = (isset($localTargetDefinition['targetOptions']) ? $localTargetDefinition['targetOptions'] : []);
-
-        $this->localTarget = new $localTargetDefinition['target']($this->localTargetName, $localTargetOptions);
+        $this->localTarget = $this->initalizeTarget($this->localTargetName);
     }
 
     public function getName()
@@ -88,6 +77,25 @@ class ProxyTarget implements TargetInterface
     public function getPublicPersistentResourceUri(PersistentResource $resource)
     {
         return $this->localTarget->getPublicPersistentResourceUri($resource);
+    }
+
+    /**
+     * @param string $name
+     * @return TargetInterface
+     * @throws Exception
+     * @see \Neos\Flow\ResourceManagement\ResourceManager::initializeTargets
+     */
+    protected function initalizeTarget($name)
+    {
+        $targetDefinition = Arrays::getValueByPath($this->settings, 'targets.' . $name);
+        if (!isset($targetDefinition['target'])) {
+            throw new Exception(sprintf('The configuration for the resource target "%s" defined in your settings has no valid "target" option. Please check the configuration syntax and make sure to specify a valid target class name.', $name), 1361467838);
+        }
+        if (!class_exists($targetDefinition['target'])) {
+            throw new Exception(sprintf('The configuration for the resource target "%s" defined in your settings has not defined a valid "target" option. Please check the configuration syntax and make sure that the specified class "%s" really exists.', $name, $targetDefinition['target']), 1361467839);
+        }
+        $options = (isset($targetDefinition['targetOptions']) ? $targetDefinition['targetOptions'] : []);
+        return new $targetDefinition['target']($this->localTargetName, $options);
     }
 
 }

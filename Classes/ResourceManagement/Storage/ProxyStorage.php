@@ -2,6 +2,7 @@
 namespace Sitegeist\MagicWand\ResourceManagement\Storage;
 
 use Neos\Flow\Annotations as Flow;
+use Neos\Flow\ResourceManagement\Storage\StorageInterface;
 use Neos\Utility\Arrays;
 use Neos\Flow\ResourceManagement\CollectionInterface;
 use Neos\Flow\ResourceManagement\PersistentResource;
@@ -40,17 +41,9 @@ class ProxyStorage implements WritableStorageInterface
         $this->localStorageName = $options['localStorage'];
     }
 
-    public function initializeObject() {
-        $localStorageDefinition = Arrays::getValueByPath($this->settings, 'storages.' . $this->localStorageName );
-
-        if (!isset($localStorageDefinition['storage'])) {
-            throw new Exception(sprintf('The configuration for the resource storage "%s" defined in your settings has no valid "storage" option. Please check the configuration syntax and make sure to specify a valid storage class name.', $this->localStorageName), 1361467211);
-        }
-        if (!class_exists($localStorageDefinition['storage'])) {
-            throw new Exception(sprintf('The configuration for the resource storage "%s" defined in your settings has not defined a valid "storage" option. Please check the configuration syntax and make sure that the specified class "%s" really exists.', $this->localStorageName, $localStorageDefinition['storage']), 1361467212);
-        }
-        $localStorageOptions = (isset($localStorageDefinition['storageOptions']) ? $localStorageDefinition['storageOptions'] : []);
-        $this->localStorage = new $localStorageDefinition['storage']($this->localStorageName, $localStorageOptions);
+    public function initializeObject()
+    {
+        $this->localStorage = $this->initializeStorage($this->localStorageName);
     }
 
     /**
@@ -94,5 +87,24 @@ class ProxyStorage implements WritableStorageInterface
     public function deleteResource(PersistentResource $resource)
     {
         return $this->localStorage->deleteResource($resource);
+    }
+
+    /**
+     * @param string $name
+     * @return StorageInterface
+     * @see \Neos\Flow\ResourceManagement\ResourceManager::initializeStorages
+     */
+    protected function initializeStorage($name)
+    {
+        $storageDefinition = Arrays::getValueByPath($this->settings, 'storages.' . $name);
+
+        if (!isset($storageDefinition['storage'])) {
+            throw new Exception(sprintf('The configuration for the resource storage "%s" defined in your settings has no valid "storage" option. Please check the configuration syntax and make sure to specify a valid storage class name.', $name), 1361467211);
+        }
+        if (!class_exists($storageDefinition['storage'])) {
+            throw new Exception(sprintf('The configuration for the resource storage "%s" defined in your settings has not defined a valid "storage" option. Please check the configuration syntax and make sure that the specified class "%s" really exists.', $name, $storageDefinition['storage']), 1361467212);
+        }
+        $options = (isset($storageDefinition['storageOptions']) ? $storageDefinition['storageOptions'] : []);
+        return new $storageDefinition['storage']($this->localStorageName, $options);
     }
 }
