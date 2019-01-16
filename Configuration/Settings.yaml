@@ -1,5 +1,6 @@
 Sitegeist:
   MagicWand:
+
     # the local flow command
     flowCommand: './flow'
 #   # preset which is used by the clone:default command
@@ -51,3 +52,7 @@ Neos:
           storage: 'magicWandProxyStorage'
           target: 'magicWandProxyTarget'
 
+    mvc:
+      routes:
+        Sitegeist.MagicWand:
+          position: 'before Neos.Neos'

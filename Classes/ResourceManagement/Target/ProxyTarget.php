@@ -2,19 +2,37 @@
 namespace Sitegeist\MagicWand\ResourceManagement\Target;
 
 use Neos\Flow\Annotations as Flow;
+use Neos\Flow\Http\Request;
+use Neos\Flow\Mvc\ActionRequest;
+use Neos\Flow\Mvc\Routing\UriBuilder;
 use Neos\Utility\Arrays;
 use Neos\Flow\ResourceManagement\CollectionInterface;
 use Neos\Flow\ResourceManagement\PersistentResource;
 use Neos\Flow\ResourceManagement\Target\Exception;
 use Neos\Flow\ResourceManagement\Target\TargetInterface;
 
+use Neos\Flow\Core\Bootstrap;
+use Neos\Flow\Http\HttpRequestHandlerInterface;
+
 class ProxyTarget implements TargetInterface
 {
+    /**
+     * @var Bootstrap
+     * @Flow\Inject
+     */
+    protected $bootstrap;
+
     /**
      * @var
      * @Flow\InjectConfiguration(package="Neos.Flow", path="resource")
      */
     protected $settings;
+
+    /**
+     * @var UriBuilder
+     * @Flow\Inject
+     */
+    protected $uriBuilder;
 
     /**
      * @var string
@@ -46,37 +64,74 @@ class ProxyTarget implements TargetInterface
     }
 
     public function initializeObject() {
+        // intialize uribuilder with request
+        $requestHandler = $this->bootstrap->getActiveRequestHandler();
+        if ($requestHandler instanceof HttpRequestHandlerInterface) {
+            $request = new ActionRequest($requestHandler->getHttpRequest());
+            $this->uriBuilder->setRequest($request);
+        }
+
+        // initialize targets
         $this->localTarget = $this->initalizeTarget($this->localTargetName);
     }
 
+    /**
+     * @return string
+     */
     public function getName()
     {
         return $this->name;
     }
 
+    /**
+     * @param CollectionInterface $collection
+     */
     public function publishCollection(CollectionInterface $collection)
     {
         return $this->localTarget->publishCollection($collection);
     }
 
+    /**
+     * @param PersistentResource $resource
+     * @param CollectionInterface $collection
+     * @throws Exception
+     */
     public function publishResource(PersistentResource $resource, CollectionInterface $collection)
     {
         return $this->localTarget->publishResource($resource, $collection);
     }
 
+    /**
+     * @param PersistentResource $resource
+     */
     public function unpublishResource(PersistentResource $resource)
     {
         return $this->localTarget->unpublishResource($resource);
     }
 
+    /**
+     * @param string $relativePathAndFilename
+     * @return string
+     */
     public function getPublicStaticResourceUri($relativePathAndFilename)
     {
         return $this->localTarget->getPublicStaticResourceUri($relativePathAndFilename);
     }
 
+    /**
+     * @param PersistentResource $resource
+     * @return string
+     * @throws Exception
+     */
     public function getPublicPersistentResourceUri(PersistentResource $resource)
     {
-        return $this->localTarget->getPublicPersistentResourceUri($resource);
+        //return $this->localTarget->getPublicPersistentResourceUri($resource);
+        return $this->uriBuilder->uriFor(
+            'index',
+            ['resourceIdentifier' => $resource],
+            'Resource',
+            'Sitegeist.MagicWand'
+        );
     }
 
     /**
