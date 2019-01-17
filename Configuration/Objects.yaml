@@ -1,0 +1,9 @@
+'Sitegeist\MagicWand\Domain\Service\ResourceProxyConfigurationService':
+  properties:
+    resourceProxyConfigurationCache:
+      object:
+        factoryObjectName: Neos\Flow\Cache\CacheManager
+        factoryMethodName: getCache
+        arguments:
+          1:
+            value: Sitegeist_Magicwand_ResourceProxyConfigurations

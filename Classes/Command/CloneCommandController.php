@@ -10,6 +10,7 @@ use Neos\Flow\Annotations as Flow;
 use Neos\Utility\Arrays;
 use Neos\Flow\Core\Bootstrap;
 use Sitegeist\MagicWand\DBAL\SimpleDBAL;
+use Sitegeist\MagicWand\Domain\Service\ResourceProxyConfigurationService;
 
 /**
  * @Flow\Scope("singleton")
@@ -40,6 +41,12 @@ class CloneCommandController extends AbstractCommandController
      * @var SimpleDBAL
      */
     protected $dbal;
+
+    /**
+     * @Flow\Inject
+     * @var ResourceProxyConfigurationService
+     */
+    protected $resourceProxyConfigurationService;
 
     /**
      * Show the list of predefined clone configurations
@@ -93,6 +100,9 @@ class CloneCommandController extends AbstractCommandController
     {
         if (count($this->clonePresets) > 0) {
             if ($this->clonePresets && array_key_exists($presetName, $this->clonePresets)) {
+
+                $this->resourceProxyConfigurationService->setCurrentResourceProxyConfiguration(Arrays::getValueByPath($this->clonePresets, $presetName . '.resourceProxy'));
+
                 $this->outputLine('Clone by preset ' . $presetName);
                 $this->remoteHostCommand(
                     $this->clonePresets[$presetName]['host'],
@@ -295,18 +305,35 @@ class CloneCommandController extends AbstractCommandController
         # Transfer Files #
         ##################
 
-        $this->outputHeadLine('Transfer Files');
-        $this->executeLocalShellCommand(
-            'rsync -e "ssh -p %s %s" -kLr %s@%s:%s/* %s',
-            [
-                $port,
-                addslashes($sshOptions),
-                $user,
-                $host,
-                $remoteDataPersistentPath,
-                $localDataPersistentPath
-            ]
-        );
+        $resourceProxyConfiguration = $this->resourceProxyConfigurationService->getCurrentResourceProxyConfiguration();
+
+        if (!$resourceProxyConfiguration) {
+            $this->outputHeadLine('Transfer Files');
+            $this->executeLocalShellCommand(
+                'rsync -e "ssh -p %s %s" -kLr %s@%s:%s/* %s',
+                [
+                    $port,
+                    addslashes($sshOptions),
+                    $user,
+                    $host,
+                    $remoteDataPersistentPath,
+                    $localDataPersistentPath
+                ]
+            );
+        } else {
+            $this->outputHeadLine('Transfer Files - without Resources because a resourceProxyConfiguration is found');
+            $this->executeLocalShellCommand(
+                'rsync -e "ssh -p %s %s" --exclude "Resources/*" -kLr %s@%s:%s/* %s',
+                [
+                    $port,
+                    addslashes($sshOptions),
+                    $user,
+                    $host,
+                    $remoteDataPersistentPath,
+                    $localDataPersistentPath
+                ]
+            );
+        }
 
         #########################
         # Transfer Translations #

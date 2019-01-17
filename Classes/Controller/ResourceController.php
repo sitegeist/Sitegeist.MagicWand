@@ -28,7 +28,10 @@ class ResourceController extends ActionController
             $headers = $this->response->getHeaders();
             $headers->set('Content-Type', $resource->getMediaType(), true);
             $this->response->setHeaders($headers);
-            return stream_get_contents($resource->getStream());
+            $sourceStream = $resource->getStream();
+            $streamContent = stream_get_contents($sourceStream);
+            fclose($sourceStream);
+            return $streamContent;
         } else {
             throw new ResourceNotFoundException("Unkonwn Resource");
         }
