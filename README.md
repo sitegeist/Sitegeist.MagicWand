@@ -69,6 +69,15 @@ Sitegeist:
 
         # commands to execute after cloning like ./flow user:create ...
         postClone: []
+
+        # informations to access the resources of the cloned setup via http
+        # if this is configured the rsync of the persistent resources is skipped
+        # and instead resources are fetched and imported on the fly once read
+        resourceProxy:
+          baseUri: http://vour.server.tld
+          # curl options
+          curlOptions:
+            CURLOPT_USERPWD: very:secure
 ```
 
 The settings should be added to the global `Settings.yaml` of the project, so that every

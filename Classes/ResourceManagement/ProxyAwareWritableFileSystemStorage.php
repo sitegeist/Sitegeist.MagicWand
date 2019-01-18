@@ -6,6 +6,7 @@ use Neos\Flow\Http\Client\Browser;
 use Neos\Flow\Http\Client\CurlEngine;
 use Neos\Flow\ResourceManagement\PersistentResource;
 use Neos\Flow\ResourceManagement\ResourceManager;
+use Neos\Flow\ResourceManagement\ResourceMetaDataInterface;
 use Neos\Flow\ResourceManagement\Storage\WritableFileSystemStorage;
 use Sitegeist\MagicWand\Domain\Service\ResourceProxyConfigurationService;
 
@@ -25,19 +26,34 @@ class ProxyAwareWritableFileSystemStorage extends WritableFileSystemStorage
 
     /**
      * @param PersistentResource $resource
+     * @return string
+     */
+    public function resourceIsPresentInStorage(ResourceMetaDataInterface $resource) {
+        $path =  $this->getStoragePathAndFilenameByHash($resource->getSha1());
+        return file_exists($path);
+    }
+
+    /**
+     * @param PersistentResource $resource
      * @return bool|resource
      */
     public function getStreamByResource(PersistentResource $resource)
     {
-        $resourceProxyConfiguration = $this->resourceProxyConfigurationService->getCurrentResourceProxyConfiguration();
-        if (!$resourceProxyConfiguration) {
+        if ($this->resourceProxyConfigurationService->hasCurrentResourceProxyConfiguration() === false) {
             return parent::getStreamByResource($resource);
         }
 
-        $localResourceStream = parent::getStreamByResource($resource);
-        if ($localResourceStream) {
-            return $localResourceStream;
+        $resourceProxyConfiguration = $this->resourceProxyConfigurationService->getCurrentResourceProxyConfiguration();
+        $isPresent = $this->resourceIsPresentInStorage($resource);
+        if ($isPresent) {
+            return parent::getStreamByResource($resource);
         } else {
+            $collection = $this->resourceManager->getCollection($resource->getCollectionName());
+            /**
+             * @var ProxyAwareFileSystemSymlinkTarget $target
+             */
+            $target = $collection->getTarget();
+
             $curlEngine = new CurlEngine();
             foreach($resourceProxyConfiguration->getCurlOptions() as $key => $value) {
                 $curlEngine->setOption(constant($key), $value);
@@ -46,7 +62,12 @@ class ProxyAwareWritableFileSystemStorage extends WritableFileSystemStorage
             $browser = new Browser();
             $browser->setRequestEngine($curlEngine);
 
-            $uri = $resourceProxyConfiguration->getBaseUri() .'/_Resources/Persistent/' . $resource->getSha1() . '/' . $resource->getFilename();
+            if ($target instanceof ProxyAwareFileSystemSymlinkTarget && $target->isSubdivideHashPathSegment()) {
+                $sha1Hash = $resource->getSha1();
+                $uri = $resourceProxyConfiguration->getBaseUri() .'/_Resources/Persistent/' . $sha1Hash[0] . '/' . $sha1Hash[1] . '/' . $sha1Hash[2] . '/' . $sha1Hash[3] . '/' . $sha1Hash . '/' . $object->getFilename();
+            } else {
+                $uri = $resourceProxyConfiguration->getBaseUri() .'/_Resources/Persistent/' . $resource->getSha1() . '/' . $resource->getFilename();
+            }
 
             $response = $browser->request($uri);
 
@@ -57,7 +78,8 @@ class ProxyAwareWritableFileSystemStorage extends WritableFileSystemStorage
                 fwrite($stream, $response->getContent());
                 rewind($stream);
 
-                parent::importResource($stream, $resource->getCollectionName());
+                $collection->importResource($stream);
+                $target->publishResource($resource, $collection);
 
                 return $stream;
             } else {

@@ -21,12 +21,18 @@ class ResourceProxyConfigurationService
         if ($configuration) {
             return new ResourceProxyConfiguration(
                 $configuration['baseUri'],
-                $configuration['curlOptions'] ?? [] ,
-                $configuration['subdivideHashPathSegment'] ?? false
+                $configuration['curlOptions'] ?? []
             );
         } else {
             return null;
         }
+    }
+
+    /**
+     * @return boolean
+     */
+    public function hasCurrentResourceProxyConfiguration() {
+        return $this->resourceProxyConfigurationCache->has('current');
     }
 
     /**

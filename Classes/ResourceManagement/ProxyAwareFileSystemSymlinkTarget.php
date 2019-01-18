@@ -4,12 +4,16 @@ namespace Sitegeist\MagicWand\ResourceManagement;
 use Neos\Flow\Annotations as Flow;
 use Neos\Flow\ResourceManagement\CollectionInterface;
 use Neos\Flow\ResourceManagement\PersistentResource;
+use Neos\Flow\ResourceManagement\ResourceManager;
+use Neos\Flow\ResourceManagement\ResourceRepository;
 use Neos\Flow\ResourceManagement\Target\Exception;
 use Neos\Flow\ResourceManagement\Target\FileSystemSymlinkTarget;
-use Sitegeist\MagicWand\Domain\Service\ResourceProxyConfigurationService;
 use Neos\Flow\Mvc\Routing\UriBuilder;
 use Neos\Flow\Http\HttpRequestHandlerInterface;
 use Neos\Flow\Mvc\ActionRequest;
+use Sitegeist\MagicWand\Domain\Service\ResourceProxyConfigurationService;
+use Sitegeist\MagicWand\ResourceManagement\ProxyAwareWritableFileSystemStorage;
+use Neos\Flow\ResourceManagement\Storage\StorageObject;
 
 class ProxyAwareFileSystemSymlinkTarget extends FileSystemSymlinkTarget
 {
@@ -24,6 +28,18 @@ class ProxyAwareFileSystemSymlinkTarget extends FileSystemSymlinkTarget
      * @Flow\Inject
      */
     protected $uriBuilder;
+
+    /**
+     * @var ResourceRepository
+     * @Flow\Inject
+     */
+    protected $resourceRepository;
+
+    /**
+     * @var ResourceManager
+     * @Flow\Inject
+     */
+    protected $resourceManager;
 
     public function initializeObject() {
         // intialize uribuilder with request
@@ -44,56 +60,29 @@ class ProxyAwareFileSystemSymlinkTarget extends FileSystemSymlinkTarget
      */
     public function publishCollection(CollectionInterface $collection, callable $callback = null)
     {
-        $resourceProxyConfiguration = $this->resourceProxyConfigurationService->getCurrentResourceProxyConfiguration();
-        if ($resourceProxyConfiguration === null) {
+        if ($this->resourceProxyConfigurationService->hasCurrentResourceProxyConfiguration() === false) {
+            return parent::publishCollection($collection, $callback);
+        }
+
+        /**
+         * @var ProxyAwareWritableFileSystemStorage $storage
+         */
+        $storage = $collection->getStorage();
+        if (!$storage instanceof ProxyAwareWritableFileSystemStorage) {
             return parent::publishCollection($collection, $callback);
         }
 
         foreach ($collection->getObjects($callback) as $object) {
             /** @var StorageObject $object */
-            $sourceStream = $object->getStream();
-            if ($sourceStream !== false) {
-                $this->publishFile($sourceStream, $this->getRelativePublicationPathAndFilename($object));
-                fclose($sourceStream);
+            $isPresent = $storage->resourceIsPresentInStorage($object);
+            if ($isPresent === false) {
+                // this storage ignores resources that are not yet in the filesystem as they
+                // are optimistically created during read operations
+                continue;
             }
-
-        }
-    }
-
-    /**
-     * @param PersistentResource $resource
-     * @param CollectionInterface $collection
-     */
-    public function publishResource(PersistentResource $resource, CollectionInterface $collection)
-    {
-        $resourceProxyConfiguration = $this->resourceProxyConfigurationService->getCurrentResourceProxyConfiguration();
-        if ($resourceProxyConfiguration === null) {
-            return parent::publishResource($resource, $collection);
-        }
-
-        $sourceStream = $resource->getStream();
-        if ($sourceStream !== false) {
-            return parent::publishResource($resource, $collection);
+            $sourceStream = $object->getStream();
+            $this->publishFile($sourceStream, $this->getRelativePublicationPathAndFilename($object));
             fclose($sourceStream);
-        }
-    }
-
-    /**
-     * @param resource $sourceStream
-     * @param string $relativeTargetPathAndFilename
-     * @throws Exception
-     */
-    protected function publishFile($sourceStream, $relativeTargetPathAndFilename)
-    {
-        $resourceProxyConfiguration = $this->resourceProxyConfigurationService->getCurrentResourceProxyConfiguration();
-        if ($resourceProxyConfiguration === null) {
-            return parent::publishFile($sourceStream, $relativeTargetPathAndFilename);
-        }
-
-        if ($sourceStream === false) {
-            return;
-        } else {
-            parent::publishFile($sourceStream, $relativeTargetPathAndFilename);
         }
     }
 
@@ -104,16 +93,31 @@ class ProxyAwareFileSystemSymlinkTarget extends FileSystemSymlinkTarget
      */
     public function getPublicPersistentResourceUri(PersistentResource $resource)
     {
-        $resourceProxyConfiguration = $this->resourceProxyConfigurationService->getCurrentResourceProxyConfiguration();
-        if ($resourceProxyConfiguration === null) {
+        if ($this->resourceProxyConfigurationService->hasCurrentResourceProxyConfiguration() === false) {
             return parent::getPublicPersistentResourceUri($resource);
         }
 
-        return $this->uriBuilder->uriFor(
-            'index',
-            ['resourceIdentifier' => $resource],
-            'Resource',
-            'Sitegeist.MagicWand'
-        );
+        $collection = $this->resourceManager->getCollection($resource->getCollectionName());
+        $storage = $collection->getStorage();
+        $isPresent = $storage->resourceIsPresentInStorage($resource);
+
+        if ($isPresent) {
+            return parent::getPublicPersistentResourceUri($resource);
+        } else {
+            return $this->uriBuilder->uriFor(
+                'index',
+                ['resourceIdentifier' => $resource],
+                'Resource',
+                'Sitegeist.MagicWand'
+            );
+        }
+    }
+
+    /**
+     * @return bool
+     */
+    public function isSubdivideHashPathSegment(): bool
+    {
+        return $this->subdivideHashPathSegment;
     }
 }

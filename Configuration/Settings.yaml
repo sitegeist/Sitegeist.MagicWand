@@ -35,15 +35,13 @@ Sitegeist:
 #        postClone:
 #         - './flow help'
 #
-#        # informations to acess the resources of the cloned setup via http
-#        # if this is confiured the rsync of the persistent resources is skipped
-#        # and instead resources are fetched and imported on the fly once they
-#        # are read
+#        # informations to access the resources of the cloned setup via http
+#        # if this is configured the rsync of the persistent resources is skipped
+#        # and instead resources are fetched and imported on the fly once read
 #        resourceProxy:
 #          baseUri: http://vour.server.tld
 #          curlOptions:
 #            CURLOPT_USERPWD: very:secure
-#          subdivideHashPathSegment: false
 
 Neos:
   Flow:
