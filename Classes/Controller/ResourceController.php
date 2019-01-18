@@ -5,6 +5,7 @@ use Neos\Flow\Annotations as Flow;
 use Neos\Flow\Mvc\Controller\ActionController;
 use Neos\Flow\ResourceManagement\PersistentResource;
 use Neos\Flow\ResourceManagement\ResourceRepository;
+use Neos\Flow\ResourceManagement\ResourceManager;
 use Sitegeist\MagicWand\ResourceManagement\ResourceNotFoundException;
 
 class ResourceController extends ActionController
@@ -17,6 +18,12 @@ class ResourceController extends ActionController
     protected $resourceRepository;
 
     /**
+     * @var ResourceManager
+     * @Flow\Inject
+     */
+    protected $resourceManager;
+
+    /**
      * @param string $resourceIdentifier
      */
     public function indexAction(string $resourceIdentifier) {
@@ -25,15 +32,12 @@ class ResourceController extends ActionController
          */
         $resource = $this->resourceRepository->findByIdentifier($resourceIdentifier);
         if ($resource) {
-            $headers = $this->response->getHeaders();
-            $headers->set('Content-Type', $resource->getMediaType(), true);
-            $this->response->setHeaders($headers);
             $sourceStream = $resource->getStream();
-            $streamContent = stream_get_contents($sourceStream);
-            fclose($sourceStream);
-            return $streamContent;
-        } else {
-            throw new ResourceNotFoundException("Unkonwn Resource");
+            if ($sourceStream !== false) {
+                fclose($sourceStream);
+                $this->redirectToUri($this->resourceManager->getPublicPersistentResourceUri($resource), 0, 302);
+            }
         }
+        throw new ResourceNotFoundException("Unknown resource");
     }
 }
