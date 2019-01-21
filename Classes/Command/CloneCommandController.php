@@ -55,19 +55,19 @@ class CloneCommandController extends AbstractCommandController
     {
         if ($this->clonePresets) {
             foreach ($this->clonePresets as $presetName => $presetConfiguration) {
-                $this->outputHeadLine($presetName);
+                $this->renderHeadLine($presetName);
                 foreach ($presetConfiguration as $key => $value) {
                     if (is_array($value)) {
-                        $this->outputLine(' - ' . $key . ':');
+                        $this->renderLine(' - ' . $key . ':');
 
                         foreach ($value as $line) {
-                            $this->outputLine('        ' . $line);
+                            $this->renderLine('        ' . $line);
                         }
 
                         continue;
                     }
 
-                    $this->outputLine(' - ' . $key . ': ' . $value);
+                    $this->renderLine(' - ' . $key . ': ' . $value);
                 }
             }
         }
@@ -82,7 +82,7 @@ class CloneCommandController extends AbstractCommandController
     public function defaultCommand(bool $yes = false, bool $keepDb = false) : void
     {
         if ($this->defaultPreset === null || $this->defaultPreset === '') {
-            $this->outputLine('There is no default preset configured!');
+            $this->renderLine('There is no default preset configured!');
             $this->quit(1);
         }
 
@@ -103,7 +103,7 @@ class CloneCommandController extends AbstractCommandController
 
                 $this->resourceProxyConfigurationService->setCurrentResourceProxyConfiguration(Arrays::getValueByPath($this->clonePresets, $presetName . '.resourceProxy'));
 
-                $this->outputLine('Clone by preset ' . $presetName);
+                $this->renderLine('Clone by preset ' . $presetName);
                 $this->remoteHostCommand(
                     $this->clonePresets[$presetName]['host'],
                     $this->clonePresets[$presetName]['user'],
@@ -123,11 +123,11 @@ class CloneCommandController extends AbstractCommandController
                     )
                 );
             } else {
-                $this->outputLine('The preset ' . $presetName . ' was not found!');
+                $this->renderLine('The preset ' . $presetName . ' was not found!');
                 $this->quit(1);
             }
         } else {
-            $this->outputLine('No presets found!');
+            $this->renderLine('No presets found!');
             $this->quit(1);
         }
     }
@@ -165,12 +165,12 @@ class CloneCommandController extends AbstractCommandController
         }
 
         // read local configuration
-        $this->outputHeadLine('Read local configuration');
+        $this->renderHeadLine('Read local configuration');
 
         $localDataPersistentPath = FLOW_PATH_ROOT . 'Data/Persistent';
 
         // read remote configuration
-        $this->outputHeadLine('Fetch remote configuration');
+        $this->renderHeadLine('Fetch remote configuration');
         $remotePersistenceConfigurationYaml = $this->executeLocalShellCommand(
             'ssh -p %s %s %s@%s "cd %s; FLOW_CONTEXT=%s '
             . $remoteFlowCommand
@@ -198,15 +198,15 @@ class CloneCommandController extends AbstractCommandController
         #################
 
         if (!$yes) {
-            $this->outputLine("Are you sure you want to do this?  Type 'yes' to continue: ");
+            $this->renderLine("Are you sure you want to do this?  Type 'yes' to continue: ");
             $handle = fopen("php://stdin", "r");
             $line = fgets($handle);
             if (trim($line) != 'yes') {
-                $this->outputLine('exit');
+                $this->renderLine('exit');
                 $this->quit(1);
             } else {
-                $this->outputLine();
-                $this->outputLine();
+                $this->renderLine();
+                $this->renderLine();
             }
         }
 
@@ -248,7 +248,7 @@ class CloneCommandController extends AbstractCommandController
         ########################
 
         if ($keepDb == false) {
-            $this->outputHeadLine('Drop and Recreate DB');
+            $this->renderHeadLine('Drop and Recreate DB');
 
             $emptyLocalDbSql = $this->dbal->flushDbSql($this->databaseConfiguration['driver'], $this->databaseConfiguration['dbname']);
 
@@ -267,14 +267,14 @@ class CloneCommandController extends AbstractCommandController
                 ]
             );
         } else {
-            $this->outputHeadLine('Skipped (Drop and Recreate DB)');
+            $this->renderHeadLine('Skipped (Drop and Recreate DB)');
         }
 
         ######################
         #  Transfer Database #
         ######################
 
-        $this->outputHeadLine('Transfer Database');
+        $this->renderHeadLine('Transfer Database');
         $this->executeLocalShellCommand(
             'ssh -p %s %s %s@%s -- %s | %s',
             [
@@ -308,7 +308,7 @@ class CloneCommandController extends AbstractCommandController
         $resourceProxyConfiguration = $this->resourceProxyConfigurationService->getCurrentResourceProxyConfiguration();
 
         if (!$resourceProxyConfiguration) {
-            $this->outputHeadLine('Transfer Files');
+            $this->renderHeadLine('Transfer Files');
             $this->executeLocalShellCommand(
                 'rsync -e "ssh -p %s %s" -kLr %s@%s:%s/* %s',
                 [
@@ -321,7 +321,7 @@ class CloneCommandController extends AbstractCommandController
                 ]
             );
         } else {
-            $this->outputHeadLine('Transfer Files - without Resources because a resourceProxyConfiguration is found');
+            $this->renderHeadLine('Transfer Files - without Resources because a resourceProxyConfiguration is found');
             $this->executeLocalShellCommand(
                 'rsync -e "ssh -p %s %s" --exclude "Resources/*" -kLr %s@%s:%s/* %s',
                 [
@@ -339,7 +339,7 @@ class CloneCommandController extends AbstractCommandController
         # Transfer Translations #
         #########################
 
-        $this->outputHeadLine('Transfer Translations');
+        $this->renderHeadLine('Transfer Translations');
 
         $remoteDataTranslationsPath = $path . '/Data/Translations';
         $localDataTranslationsPath = FLOW_PATH_ROOT . 'Data/Translations';
@@ -375,14 +375,14 @@ class CloneCommandController extends AbstractCommandController
         # Clear Caches #
         ################
 
-        $this->outputHeadLine('Clear Caches');
+        $this->renderHeadLine('Clear Caches');
         $this->executeLocalFlowCommand('flow:cache:flush');
 
         ##################
         # Set DB charset #
         ##################
-        if ($this->databaseConfiguration['driver'] == 'pdo_mysql' && $remotePersistenceConfiguration['charset'] != 'utf8mb4') {
-            $this->outputHeadLine('Set DB charset');
+        if ($this->databaseConfiguration['driver'] == 'pdo_mysql' && $remotePersistenceConfiguration['charset'] != 'utf8mb4' ) {
+            $this->renderHeadLine('Set DB charset');
             $this->executeLocalFlowCommand('database:setcharset');
         }
 
@@ -390,14 +390,14 @@ class CloneCommandController extends AbstractCommandController
         # Migrate DB #
         ##############
 
-        $this->outputHeadLine('Migrate cloned DB');
+        $this->renderHeadLine('Migrate cloned DB');
         $this->executeLocalFlowCommand('doctrine:migrate');
 
         #####################
         # Publish Resources #
         #####################
 
-        $this->outputHeadLine('Publish Resources');
+        $this->renderHeadLine('Publish Resources');
         $this->executeLocalFlowCommand('resource:publish');
 
         ##############
@@ -405,7 +405,7 @@ class CloneCommandController extends AbstractCommandController
         ##############
 
         if ($postClone) {
-            $this->outputHeadLine('Execute post_clone commands');
+            $this->renderHeadLine('Execute post_clone commands');
             if (is_array($postClone)) {
                 foreach ($postClone as $postCloneCommand) {
                     $this->executeLocalShellCommandWithFlowContext($postCloneCommand);
@@ -422,8 +422,8 @@ class CloneCommandController extends AbstractCommandController
         $endTimestamp = time();
         $duration = $endTimestamp - $startTimestamp;
 
-        $this->outputHeadLine('Done');
-        $this->outputLine('Successfully cloned in %s seconds', [$duration]);
+        $this->renderHeadLine('Done');
+        $this->renderLine('Successfully cloned in %s seconds', [$duration]);
     }
 
     /**
@@ -433,22 +433,22 @@ class CloneCommandController extends AbstractCommandController
      */
     protected function checkConfiguration($remotePersistenceConfiguration)
     {
-        $this->outputHeadLine('Check Configuration');
+        $this->renderHeadLine('Check Configuration');
         if (!$this->dbal->driverIsSupported($remotePersistenceConfiguration['driver'])
             && !$this->dbal->driverIsSupported($this->databaseConfiguration['driver'])) {
-            $this->outputLine(sprintf('<error>ERROR:</error> Only pdo_pgsql and pdo_mysql drivers are supported! Remote: "%s" Local: "%s" configured.', $remotePersistenceConfiguration['driver'], $this->databaseConfiguration['driver']));
+            $this->renderLine(sprintf('<error>ERROR:</error> Only pdo_pgsql and pdo_mysql drivers are supported! Remote: "%s" Local: "%s" configured.', $remotePersistenceConfiguration['driver'], $this->databaseConfiguration['driver']));
             $this->quit(1);
         }
         if ($remotePersistenceConfiguration['driver'] !== $this->databaseConfiguration['driver']) {
-            $this->outputLine('<error>ERROR:</error> Remote and local databases must use the same driver!');
+            $this->renderLine('<error>ERROR:</error> Remote and local databases must use the same driver!');
             $this->quit(1);
         }
         if (in_array($remotePersistenceConfiguration['charset'], ['utf8', 'utf8mb4']) && in_array($this->databaseConfiguration['charset'], ['utf8', 'utf8mb4'])) {
             // we accept utf8 and utf8mb4 being similar enough
         } else if ($remotePersistenceConfiguration['charset'] != $this->databaseConfiguration['charset']) {
-            $this->outputLine(sprintf('<error>ERROR:</error> Remote and local databases must use the same charset! Remote: "%s", Local: "%s" configured.', $remotePersistenceConfiguration['charset'], $this->databaseConfiguration['charset']));
+            $this->renderLine(sprintf('<error>ERROR:</error> Remote and local databases must use the same charset! Remote: "%s", Local: "%s" configured.', $remotePersistenceConfiguration['charset'], $this->databaseConfiguration['charset']));
             $this->quit(1);
         }
-        $this->outputLine(' - Configuration seems ok ...');
+        $this->renderLine(' - Configuration seems ok ...');
     }
 }
