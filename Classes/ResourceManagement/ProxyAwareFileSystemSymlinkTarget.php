@@ -11,17 +11,17 @@ use Neos\Flow\ResourceManagement\Target\FileSystemSymlinkTarget;
 use Neos\Flow\Mvc\Routing\UriBuilder;
 use Neos\Flow\Http\HttpRequestHandlerInterface;
 use Neos\Flow\Mvc\ActionRequest;
-use Sitegeist\MagicWand\Domain\Service\ResourceProxyConfigurationService;
+use Sitegeist\MagicWand\Domain\Service\ConfigurationService;
 use Sitegeist\MagicWand\ResourceManagement\ProxyAwareWritableFileSystemStorage;
 use Neos\Flow\ResourceManagement\Storage\StorageObject;
 
 class ProxyAwareFileSystemSymlinkTarget extends FileSystemSymlinkTarget
 {
     /**
-     * @var ResourceProxyConfigurationService
+     * @var ConfigurationService
      * @Flow\Inject
      */
-    protected $resourceProxyConfigurationService;
+    protected $configurationService;
 
     /**
      * @var UriBuilder
@@ -60,7 +60,7 @@ class ProxyAwareFileSystemSymlinkTarget extends FileSystemSymlinkTarget
      */
     public function publishCollection(CollectionInterface $collection, callable $callback = null)
     {
-        if ($this->resourceProxyConfigurationService->hasCurrentResourceProxyConfiguration() === false) {
+        if (!$this->configurationService->getCurrentConfigurationByPath('resourceProxy')) {
             return parent::publishCollection($collection, $callback);
         }
 
@@ -74,8 +74,7 @@ class ProxyAwareFileSystemSymlinkTarget extends FileSystemSymlinkTarget
 
         foreach ($collection->getObjects($callback) as $object) {
             /** @var StorageObject $object */
-            $isPresent = $storage->resourceIsPresentInStorage($object);
-            if ($isPresent === false) {
+            if ($storage->resourceIsPresentInStorage($object) === false) {
                 // this storage ignores resources that are not yet in the filesystem as they
                 // are optimistically created during read operations
                 continue;
@@ -93,31 +92,28 @@ class ProxyAwareFileSystemSymlinkTarget extends FileSystemSymlinkTarget
      */
     public function getPublicPersistentResourceUri(PersistentResource $resource)
     {
-        if ($this->resourceProxyConfigurationService->hasCurrentResourceProxyConfiguration() === false) {
+        if (!$this->configurationService->getCurrentConfigurationByPath('resourceProxy')) {
             return parent::getPublicPersistentResourceUri($resource);
         }
 
         $collection = $this->resourceManager->getCollection($resource->getCollectionName());
         $storage = $collection->getStorage();
-        $isPresent = $storage->resourceIsPresentInStorage($resource);
 
-        if ($isPresent) {
+        if (!$storage instanceof ProxyAwareWritableFileSystemStorage) {
             return parent::getPublicPersistentResourceUri($resource);
-        } else {
-            return $this->uriBuilder->uriFor(
-                'index',
-                ['resourceIdentifier' => $resource],
-                'Resource',
-                'Sitegeist.MagicWand'
-            );
         }
-    }
 
-    /**
-     * @return bool
-     */
-    public function isSubdivideHashPathSegment(): bool
-    {
-        return $this->subdivideHashPathSegment;
+        if ($storage->resourceIsPresentInStorage($resource)) {
+            return parent::getPublicPersistentResourceUri($resource);
+        }
+
+        // build uri to resoucre controller that will fetch and publish
+        // the resource asynchronously
+        return $this->uriBuilder->uriFor(
+            'index',
+            ['resourceIdentifier' => $resource],
+            'Resource',
+            'Sitegeist.MagicWand'
+        );
     }
 }

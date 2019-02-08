@@ -36,8 +36,11 @@ class ResourceController extends ActionController
             if ($sourceStream !== false) {
                 fclose($sourceStream);
                 $this->redirectToUri($this->resourceManager->getPublicPersistentResourceUri($resource), 0, 302);
+            } else {
+                throw new ResourceNotFoundException(sprintf('Could not read stream of resource with id %s ', $resourceIdentifier));
             }
         }
-        throw new ResourceNotFoundException("Unknown resource");
+
+        throw new ResourceNotFoundException(sprintf('Could not find any resource with id %s in local database', $resourceIdentifier));
     }
 }

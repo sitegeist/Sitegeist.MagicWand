@@ -1,5 +1,5 @@
 
-Sitegeist_Magicwand_ResourceProxyConfigurations:
+Sitegeist_Magicwand_ClonePresetInformation:
   persistent: true
   frontend: Neos\Cache\Frontend\VariableFrontend
   backend: Neos\Cache\Backend\FileBackend

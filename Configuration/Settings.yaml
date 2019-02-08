@@ -40,6 +40,7 @@ Sitegeist:
 #        # and instead resources are fetched and imported on the fly once read
 #        resourceProxy:
 #          baseUri: http://vour.server.tld
+#          subdivideHashPathSegment: false
 #          curlOptions:
 #            CURLOPT_USERPWD: very:secure
 

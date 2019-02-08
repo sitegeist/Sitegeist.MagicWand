@@ -75,6 +75,8 @@ Sitegeist:
         # and instead resources are fetched and imported on the fly once read
         resourceProxy:
           baseUri: http://vour.server.tld
+          # define wether or not the remote uses subdivideHashPathSegments
+          subdivideHashPathSegment: false
           # curl options
           curlOptions:
             CURLOPT_USERPWD: very:secure

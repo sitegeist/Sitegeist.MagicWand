@@ -10,7 +10,7 @@ use Neos\Flow\Annotations as Flow;
 use Neos\Utility\Arrays;
 use Neos\Flow\Core\Bootstrap;
 use Sitegeist\MagicWand\DBAL\SimpleDBAL;
-use Sitegeist\MagicWand\Domain\Service\ResourceProxyConfigurationService;
+use Sitegeist\MagicWand\Domain\Service\ConfigurationService;
 
 /**
  * @Flow\Scope("singleton")
@@ -44,9 +44,9 @@ class CloneCommandController extends AbstractCommandController
 
     /**
      * @Flow\Inject
-     * @var ResourceProxyConfigurationService
+     * @var ConfigurationService
      */
-    protected $resourceProxyConfigurationService;
+    protected $configurationService;
 
     /**
      * Show the list of predefined clone configurations
@@ -101,25 +101,26 @@ class CloneCommandController extends AbstractCommandController
         if (count($this->clonePresets) > 0) {
             if ($this->clonePresets && array_key_exists($presetName, $this->clonePresets)) {
 
-                $this->resourceProxyConfigurationService->setCurrentResourceProxyConfiguration(Arrays::getValueByPath($this->clonePresets, $presetName . '.resourceProxy'));
+                $this->configurationService->setCurrentPreset($presetName);
+                $configuration = $this->configurationService->getCurrentConfiguration();
 
                 $this->renderLine('Clone by preset ' . $presetName);
                 $this->remoteHostCommand(
-                    $this->clonePresets[$presetName]['host'],
-                    $this->clonePresets[$presetName]['user'],
-                    $this->clonePresets[$presetName]['port'],
-                    $this->clonePresets[$presetName]['path'],
-                    $this->clonePresets[$presetName]['context'],
-                    (isset($this->clonePresets[$presetName]['postClone']) ?
-                        $this->clonePresets[$presetName]['postClone'] : null
+                    $configuration['host'],
+                    $configuration['user'],
+                    $configuration['port'],
+                    $configuration['path'],
+                    $configuration['context'],
+                    (isset($configuration['postClone']) ?
+                        $configuration['postClone'] : null
                     ),
                     $yes,
                     $keepDb,
-                    (isset($this->clonePresets[$presetName]['flowCommand']) ?
-                        $this->clonePresets[$presetName]['flowCommand'] : null
+                    (isset($configuration['flowCommand']) ?
+                        $configuration['flowCommand'] : null
                     ),
-                    (isset($this->clonePresets[$presetName]['sshOptions']) ?
-                        $this->clonePresets[$presetName]['sshOptions'] : ''
+                    (isset($configuration['sshOptions']) ?
+                        $configuration['sshOptions'] : ''
                     )
                 );
             } else {
@@ -305,7 +306,7 @@ class CloneCommandController extends AbstractCommandController
         # Transfer Files #
         ##################
 
-        $resourceProxyConfiguration = $this->resourceProxyConfigurationService->getCurrentResourceProxyConfiguration();
+        $resourceProxyConfiguration = $this->configurationService->getCurrentConfigurationByPath('resourceProxy');
 
         if (!$resourceProxyConfiguration) {
             $this->renderHeadLine('Transfer Files');

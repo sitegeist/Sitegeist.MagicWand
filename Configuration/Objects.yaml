@@ -1,9 +1,9 @@
-'Sitegeist\MagicWand\Domain\Service\ResourceProxyConfigurationService':
+'Sitegeist\MagicWand\Domain\Service\ConfigurationService':
   properties:
-    resourceProxyConfigurationCache:
+    clonePresetInformationCache:
       object:
         factoryObjectName: Neos\Flow\Cache\CacheManager
         factoryMethodName: getCache
         arguments:
           1:
-            value: Sitegeist_Magicwand_ResourceProxyConfigurations
+            value: Sitegeist_Magicwand_ClonePresetInformation

@@ -8,15 +8,15 @@ use Neos\Flow\ResourceManagement\PersistentResource;
 use Neos\Flow\ResourceManagement\ResourceManager;
 use Neos\Flow\ResourceManagement\ResourceMetaDataInterface;
 use Neos\Flow\ResourceManagement\Storage\WritableFileSystemStorage;
-use Sitegeist\MagicWand\Domain\Service\ResourceProxyConfigurationService;
+use Sitegeist\MagicWand\Domain\Service\ConfigurationService;
 
 class ProxyAwareWritableFileSystemStorage extends WritableFileSystemStorage
 {
     /**
-     * @var ResourceProxyConfigurationService
+     * @var ConfigurationService
      * @Flow\Inject
      */
-    protected $resourceProxyConfigurationService;
+    protected $configurationService;
 
     /**
      * @var ResourceManager
@@ -39,52 +39,45 @@ class ProxyAwareWritableFileSystemStorage extends WritableFileSystemStorage
      */
     public function getStreamByResource(PersistentResource $resource)
     {
-        if ($this->resourceProxyConfigurationService->hasCurrentResourceProxyConfiguration() === false) {
+        $resourceProxyConfiguration = $this->configurationService->getCurrentConfigurationByPath('resourceProxy');
+        if (!$resourceProxyConfiguration) {
             return parent::getStreamByResource($resource);
         }
 
-        $resourceProxyConfiguration = $this->resourceProxyConfigurationService->getCurrentResourceProxyConfiguration();
-        $isPresent = $this->resourceIsPresentInStorage($resource);
-        if ($isPresent) {
+        $collection = $this->resourceManager->getCollection($resource->getCollectionName());
+        $target = $collection->getTarget();
+        if (!$target instanceof ProxyAwareFileSystemSymlinkTarget) {
             return parent::getStreamByResource($resource);
+        }
+
+        $curlEngine = new CurlEngine();
+        $curlOptions = $resourceProxyConfiguration['curlOptions'] ?? [];
+        foreach($curlOptions as $key => $value) {
+            $curlEngine->setOption(constant($key), $value);
+        }
+
+        $browser = new Browser();
+        $browser->setRequestEngine($curlEngine);
+
+        $subdivideHashPathSegment = $resourceProxyConfiguration['subdivideHashPathSegment'] ?? false;
+        if ($subdivideHashPathSegment) {
+            $sha1Hash = $resource->getSha1();
+            $uri = $resourceProxyConfiguration['baseUri'] .'/_Resources/Persistent/' . $sha1Hash[0] . '/' . $sha1Hash[1] . '/' . $sha1Hash[2] . '/' . $sha1Hash[3] . '/' . $sha1Hash . '/' . $resource->getSha1() . '/' . $resource->getFilename();;
         } else {
-            $collection = $this->resourceManager->getCollection($resource->getCollectionName());
-            /**
-             * @var ProxyAwareFileSystemSymlinkTarget $target
-             */
-            $target = $collection->getTarget();
-
-            $curlEngine = new CurlEngine();
-            foreach($resourceProxyConfiguration->getCurlOptions() as $key => $value) {
-                $curlEngine->setOption(constant($key), $value);
-            }
-
-            $browser = new Browser();
-            $browser->setRequestEngine($curlEngine);
-
-            if ($target instanceof ProxyAwareFileSystemSymlinkTarget && $target->isSubdivideHashPathSegment()) {
-                $sha1Hash = $resource->getSha1();
-                $uri = $resourceProxyConfiguration->getBaseUri() .'/_Resources/Persistent/' . $sha1Hash[0] . '/' . $sha1Hash[1] . '/' . $sha1Hash[2] . '/' . $sha1Hash[3] . '/' . $sha1Hash . '/' . $object->getFilename();
-            } else {
-                $uri = $resourceProxyConfiguration->getBaseUri() .'/_Resources/Persistent/' . $resource->getSha1() . '/' . $resource->getFilename();
-            }
-
-            $response = $browser->request($uri);
-
-            if ($response->getStatusCode() == 200 ) {
-                $response->getContent();
-
-                $stream = fopen('php://memory', 'r+');
-                fwrite($stream, $response->getContent());
-                rewind($stream);
-
-                $collection->importResource($stream);
-                $target->publishResource($resource, $collection);
-
-                return $stream;
-            } else {
-                throw new ResourceNotFoundException('Kennichnich');
-            }
+            $uri = $resourceProxyConfiguration['baseUri'] .'/_Resources/Persistent/' . $resource->getSha1() . '/' . $resource->getFilename();
         }
+
+        $response = $browser->request($uri);
+
+        if ($response->getStatusCode() == 200 ) {
+            $stream = $response->getBody()->detach();
+            $importedResource = $collection->importResource($stream);
+            $target->publishResource($importedResource, $collection);
+            return $importedResource->getStream();
+        }
+
+        throw new ResourceNotFoundException(
+            sprintf('Resource from uri %s returned status %s', $uri, $response->getStatusCode())
+        );
     }
 }
