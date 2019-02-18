@@ -9,6 +9,7 @@ use Neos\Flow\ResourceManagement\ResourceManager;
 use Neos\Flow\ResourceManagement\ResourceMetaDataInterface;
 use Neos\Flow\ResourceManagement\Storage\WritableFileSystemStorage;
 use Sitegeist\MagicWand\Domain\Service\ConfigurationService;
+use Neos\Utility\Files;
 
 class ProxyAwareWritableFileSystemStorage extends WritableFileSystemStorage
 {
@@ -39,6 +40,10 @@ class ProxyAwareWritableFileSystemStorage extends WritableFileSystemStorage
      */
     public function getStreamByResource(PersistentResource $resource)
     {
+        if ($this->resourceIsPresentInStorage($resource)) {
+            return parent::getStreamByResource($resource);
+        }
+
         $resourceProxyConfiguration = $this->configurationService->getCurrentConfigurationByPath('resourceProxy');
         if (!$resourceProxyConfiguration) {
             return parent::getStreamByResource($resource);
@@ -71,9 +76,14 @@ class ProxyAwareWritableFileSystemStorage extends WritableFileSystemStorage
 
         if ($response->getStatusCode() == 200 ) {
             $stream = $response->getBody()->detach();
-            $importedResource = $collection->importResource($stream);
-            $target->publishResource($importedResource, $collection);
-            return $importedResource->getStream();
+            $targetPathAndFilename =  $this->getStoragePathAndFilenameByHash($resource->getSha1());
+            if (!file_exists(dirname($targetPathAndFilename))) {
+                Files::createDirectoryRecursively(dirname($targetPathAndFilename));
+            }
+            file_put_contents($targetPathAndFilename, stream_get_contents($stream));
+            $this->fixFilePermissions($targetPathAndFilename);
+            $target->publishResource($resource, $collection);
+            return $stream;
         }
 
         throw new ResourceNotFoundException(
