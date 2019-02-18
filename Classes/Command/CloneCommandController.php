@@ -11,6 +11,7 @@ use Neos\Utility\Arrays;
 use Neos\Flow\Core\Bootstrap;
 use Sitegeist\MagicWand\DBAL\SimpleDBAL;
 use Sitegeist\MagicWand\Domain\Service\ConfigurationService;
+use Symfony\Component\Yaml\Yaml;
 
 /**
  * @Flow\Scope("singleton")
@@ -56,18 +57,10 @@ class CloneCommandController extends AbstractCommandController
         if ($this->clonePresets) {
             foreach ($this->clonePresets as $presetName => $presetConfiguration) {
                 $this->renderHeadLine($presetName);
-                foreach ($presetConfiguration as $key => $value) {
-                    if (is_array($value)) {
-                        $this->renderLine(' - ' . $key . ':');
-
-                        foreach ($value as $line) {
-                            $this->renderLine('        ' . $line);
-                        }
-
-                        continue;
-                    }
-
-                    $this->renderLine(' - ' . $key . ': ' . $value);
+                $presetConfigurationAsYaml = Yaml::dump($presetConfiguration);
+                $lines = explode(PHP_EOL, $presetConfigurationAsYaml);
+                foreach ($lines as $line) {
+                    $this->renderLine($line);
                 }
             }
         }
