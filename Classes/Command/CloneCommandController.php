@@ -98,7 +98,7 @@ class CloneCommandController extends AbstractCommandController
                 $configuration = $this->configurationService->getCurrentConfiguration();
 
                 $this->renderLine('Clone by preset ' . $presetName);
-                $this->remoteHostCommand(
+                $this->cloneRemoteHost(
                     $configuration['host'],
                     $configuration['user'],
                     $configuration['port'],
@@ -140,7 +140,7 @@ class CloneCommandController extends AbstractCommandController
      * @param string $remoteFlowCommand the flow command to execute on the remote system
      * @param string $sshOptions additional options for the ssh command
      */
-    public function remoteHostCommand(
+    protected function cloneRemoteHost(
         $host,
         $user,
         $port,

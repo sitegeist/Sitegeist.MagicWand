@@ -14,7 +14,7 @@ section of your composer.json**.
 
 ## Easy and fast cloning of Flow and Neos Installations
 
-The CLI commands `clone:list`, `clone:preset` and `clone:remotehost` help to
+The CLI commands `clone:list`, `clone:preset` to help to
 clone a remote Flow/Neos setup into the local Flow/Neos installation that executes the command.
 
 **Attention: These commands will empty the local database and resources of your local Flow installation.
@@ -28,9 +28,6 @@ using the commands.**
 
 # clone from remote host with the information stored in the master preset
 ./flow clone:preset master
-
-# clone remote host with the information stored in the master preset
-./flow clone:remotehost --host=host --user=user --port=port --path=path --context=context
 ```
 
 ### Settings.yaml
