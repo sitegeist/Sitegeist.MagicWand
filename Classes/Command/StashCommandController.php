@@ -15,9 +15,6 @@ use Neos\Flow\Core\Bootstrap;
  */
 class StashCommandController extends AbstractCommandController
 {
-
-
-
     /**
      * Creates a new stash entry with the given name.
      *
@@ -277,7 +274,7 @@ class StashCommandController extends AbstractCommandController
                 . '`; CREATE DATABASE `'
                 . $this->databaseConfiguration['dbname']
                 . '` collate utf8_unicode_ci;';
-            
+
             $this->executeLocalShellCommand(
                 'echo %s | mysql --host=%s --user=%s --password=%s',
                 [

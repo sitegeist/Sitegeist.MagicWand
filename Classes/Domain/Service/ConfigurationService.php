@@ -24,9 +24,9 @@ class ConfigurationService
      */
     public function getCurrentConfiguration(): array
     {
-        $cloneInformations = $this->clonePresetInformationCache->get('current');
-        if ($cloneInformations && is_array($this->clonePresets) && array_key_exists($cloneInformations['presetName'], $this->clonePresets)) {
-            return $this->clonePresets[$cloneInformations['presetName']];
+        $cloneInformation = $this->clonePresetInformationCache->get('current');
+        if ($cloneInformation && is_array($this->clonePresets) && array_key_exists($cloneInformation['presetName'], $this->clonePresets)) {
+            return $this->clonePresets[$cloneInformation['presetName']];
         } else {
             return [];
         }
