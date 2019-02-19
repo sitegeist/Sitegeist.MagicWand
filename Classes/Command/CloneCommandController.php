@@ -44,12 +44,6 @@ class CloneCommandController extends AbstractCommandController
     protected $dbal;
 
     /**
-     * @Flow\Inject
-     * @var ConfigurationService
-     */
-    protected $configurationService;
-
-    /**
      * Show the list of predefined clone configurations
      */
     public function listCommand()
