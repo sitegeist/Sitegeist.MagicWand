@@ -10,7 +10,6 @@ use Neos\Flow\Annotations as Flow;
 use Neos\Utility\Arrays;
 use Neos\Flow\Core\Bootstrap;
 use Sitegeist\MagicWand\DBAL\SimpleDBAL;
-use Sitegeist\MagicWand\Domain\Service\ConfigurationService;
 use Symfony\Component\Yaml\Yaml;
 
 /**
@@ -42,12 +41,6 @@ class CloneCommandController extends AbstractCommandController
      * @var SimpleDBAL
      */
     protected $dbal;
-
-    /**
-     * @Flow\Inject
-     * @var ConfigurationService
-     */
-    protected $configurationService;
 
     /**
      * Show the list of predefined clone configurations
