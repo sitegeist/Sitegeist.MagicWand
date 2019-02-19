@@ -29,10 +29,7 @@ class StashCommandController extends AbstractCommandController
         #     Build Paths     #
         #######################
 
-        $basePath = sprintf(
-            FLOW_PATH_ROOT . 'Data/MagicWandStash/%s',
-            $name
-        );
+        $basePath = $this->getStashEntryPath($name);
 
         $databaseDestination = $basePath . '/database.sql';
         $persistentDestination = $basePath . '/persistent/';
@@ -51,6 +48,24 @@ class StashCommandController extends AbstractCommandController
 
         $this->addSecret($this->databaseConfiguration['user']);
         $this->addSecret($this->databaseConfiguration['password']);
+
+        ######################
+        #  Write Manifest    #
+        ######################
+        $this->renderHeadLine('Write Manifest');
+        $presetName = $this->configurationService->getCurrentPreset();
+        $presetConfiguration = $this->configurationService->getCurrentConfiguration();
+        $cloneTimestamp = $this->configurationService->getMostRecentCloneTimeStamp();
+        $stashTimestamp = time();
+
+        $this->writeStashEntryManifest($name, [
+            'preset' => [
+                'name' => $presetName,
+                'configuration' => $presetConfiguration
+            ],
+            'cloned_at' => $cloneTimestamp,
+            'stashed_at' => $stashTimestamp
+        ]);
 
         ######################
         #  Backup Database   #
@@ -99,6 +114,8 @@ class StashCommandController extends AbstractCommandController
      */
     public function listCommand()
     {
+        $head = ['Name', 'Stashed At', 'From Preset', 'Cloned At'];
+        $rows = [];
         $basePath = sprintf(FLOW_PATH_ROOT . 'Data/MagicWandStash');
 
         if (!is_dir($basePath)) {
@@ -111,7 +128,16 @@ class StashCommandController extends AbstractCommandController
 
         foreach ($baseDir as $entry) {
             if (!in_array($entry, ['.', '..'])) {
-                $this->renderLine(' • %s', [$entry->getFilename()]);
+                $stashEntryName = $entry->getFilename();
+                $manifest = $this->readStashEntryManifest($stashEntryName) ?: [];
+
+                $rows[] = [
+                    $stashEntryName,
+                    $manifest['stashed_at'] ? date('Y-m-d H:i:s', $manifest['stashed_at']) : 'N/A',
+                    isset($manifest['preset']['name']) ? $manifest['preset']['name'] : 'N/A',
+                    $manifest['cloned_at'] ? date('Y-m-d H:i:s', $manifest['cloned_at']) : 'N/A',
+                ];
+
                 $anyEntry = true;
             }
         }
@@ -120,6 +146,8 @@ class StashCommandController extends AbstractCommandController
             $this->renderLine('Stash is empty.');
             $this->quit(1);
         }
+
+        $this->output->outputTable($rows, $head);
     }
 
     /**
@@ -155,7 +183,7 @@ class StashCommandController extends AbstractCommandController
      */
     public function restoreCommand($name, $yes = false, $keepDb = false)
     {
-        $basePath = sprintf(FLOW_PATH_ROOT . 'Data/MagicWandStash/%s', $name);
+        $basePath = $this->getStashEntryPath($name);
         $this->restoreStashEntry($basePath, $name, $yes, true, $keepDb);
     }
 
@@ -344,6 +372,13 @@ class StashCommandController extends AbstractCommandController
         $this->renderHeadLine('Publish Resources');
         $this->executeLocalFlowCommand('resource:publish');
 
+        #############################
+        # Restore Clone Information #
+        #############################
+        if($manifest = $this->readStashEntryManifest($name)) {
+            $this->configurationService->setCurrentStashEntry($name, $manifest);
+        }
+
         #################
         # Final Message #
         #################
@@ -368,5 +403,58 @@ class StashCommandController extends AbstractCommandController
         }
 
         $this->renderLine(' - Configuration seems ok ...');
+    }
+
+    /**
+     * @param string $stashEntryName
+     * @return string
+     */
+    protected function getStashEntryPath(string $stashEntryName): string
+    {
+        return sprintf(
+            FLOW_PATH_ROOT . 'Data/MagicWandStash/%s',
+            $stashEntryName
+        );
+    }
+
+    /**
+     * @param string $stashEntryName
+     * @return array|null
+     */
+    protected function readStashEntryManifest(string $stashEntryName): ?array
+    {
+        $manifestDestination = $this->getStashEntryPath($stashEntryName) . '/manifest.json';
+
+        if (file_exists($manifestDestination)) {
+            if ($manifest = json_decode(file_get_contents($manifestDestination), true)) {
+                if (is_array($manifest)) {
+                    return $manifest;
+                }
+            }
+
+            $this->outputLine('<error>Manifest file has been corrupted.</error>');
+        }
+
+        return null;
+    }
+
+    /**
+     * @param string $stashEntryName
+     * @param array $manifest
+     * @return void
+     */
+    protected function writeStashEntryManifest(string $stashEntryName, array $manifest): void
+    {
+        $manifestDestination = $this->getStashEntryPath($stashEntryName) . '/manifest.json';
+
+        // Create directory, if not exists
+        if (!file_exists(dirname($manifestDestination))) {
+            FileUtils::createDirectoryRecursively(dirname($manifestDestination));
+        }
+
+        // Write manifest file
+        file_put_contents($manifestDestination, json_encode($manifest, JSON_PRETTY_PRINT));
+
+        $this->outputLine('Wrote "%s"', [$manifestDestination]);
     }
 }
