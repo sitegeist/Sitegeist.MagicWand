@@ -9,10 +9,10 @@ namespace Sitegeist\MagicWand\Command;
 use Neos\Flow\Annotations as Flow;
 use Neos\Flow\Core\Bootstrap;
 use Neos\Flow\Cli\CommandController;
+use Sitegeist\MagicWand\Domain\Service\ConfigurationService;
 
 abstract class AbstractCommandController extends CommandController
 {
-
     const HIDE_RESULT = 1;
     const HIDE_COMMAND = 2;
 
