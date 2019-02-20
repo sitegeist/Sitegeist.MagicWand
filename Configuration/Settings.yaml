@@ -1,5 +1,6 @@
 Sitegeist:
   MagicWand:
+
     # the local flow command
     flowCommand: './flow'
 #   # preset which is used by the clone:default command
@@ -7,21 +8,55 @@ Sitegeist:
     clonePresets: []
 #      # the name of the preset for referencing on the clone:preset command
 #      master:
+#
 #        # hostname or ip of the server to clone from
 #        host: ~
+#
 #        # ssh username
 #        user: ~
+#
 #        # ssh port
 #        port: ~
+#
 #        # ssh options
 #        sshOptions: ~
+#
 #        # path on the remote server
 #        path: ~
+#
 #        # flow-context on the remote server
 #        context: Production
+#
 #        # the flow cli command on the remote server
 #        # default is the main flowCommand-Setting
 #        flowCommand: ~
+#
 #        # commands to execute after cloning
 #        postClone:
 #         - './flow help'
+#
+#        # informations to access the resources of the cloned setup via http
+#        # if this is configured the rsync of the persistent resources is skipped
+#        # and instead resources are fetched and imported on the fly once read
+#        resourceProxy:
+#          baseUri: http://vour.server.tld
+#          subdivideHashPathSegment: false
+#          curlOptions:
+#            CURLOPT_USERPWD: very:secure
+
+Neos:
+  Flow:
+    resource:
+
+      storages:
+        defaultPersistentResourcesStorage:
+          storage: 'Sitegeist\MagicWand\ResourceManagement\ProxyAwareWritableFileSystemStorage'
+
+      targets:
+        localWebDirectoryPersistentResourcesTarget:
+          target: 'Sitegeist\MagicWand\ResourceManagement\ProxyAwareFileSystemSymlinkTarget'
+
+    mvc:
+      routes:
+        Sitegeist.MagicWand:
+          position: 'before Neos.Neos'

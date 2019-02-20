@@ -1,0 +1,11 @@
+privilegeTargets:
+  'Neos\Flow\Security\Authorization\Privilege\Method\MethodPrivilege':
+    'Sitegeist.MagicWand:ProxyAssets':
+      matcher: 'method(Sitegeist\MagicWand\Controller\ResourceController->indexAction())'
+
+roles:
+  'Neos.Flow:Everybody':
+    privileges:
+      -
+        privilegeTarget: 'Sitegeist.MagicWand:ProxyAssets'
+        permission: GRANT

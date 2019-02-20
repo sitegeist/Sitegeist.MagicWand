@@ -9,10 +9,10 @@ namespace Sitegeist\MagicWand\Command;
 use Neos\Flow\Annotations as Flow;
 use Neos\Flow\Core\Bootstrap;
 use Neos\Flow\Cli\CommandController;
+use Sitegeist\MagicWand\Domain\Service\ConfigurationService;
 
 abstract class AbstractCommandController extends CommandController
 {
-
     const HIDE_RESULT = 1;
     const HIDE_COMMAND = 2;
 
@@ -45,6 +45,12 @@ abstract class AbstractCommandController extends CommandController
     protected $flowCommand;
 
     /**
+     * @Flow\Inject
+     * @var ConfigurationService
+     */
+    protected $configurationService;
+
+    /**
      * @param string $commands
      * @param array $arguments
      * @param array $options
@@ -53,11 +59,11 @@ abstract class AbstractCommandController extends CommandController
     {
         $customizedCommand = call_user_func_array('sprintf', array_merge([$command], $arguments));
         if (!in_array(self::HIDE_COMMAND, $options)) {
-            $this->outputLine($customizedCommand);
+            $this->renderLine($customizedCommand);
         }
         $customizedCommandResult = shell_exec($customizedCommand);
         if (is_string($customizedCommandResult) && !in_array(self::HIDE_RESULT, $options)) {
-            $this->outputLine($customizedCommandResult);
+            $this->renderLine($customizedCommandResult);
         }
         return $customizedCommandResult;
     }
@@ -87,19 +93,19 @@ abstract class AbstractCommandController extends CommandController
     /**
      * @param $line
      */
-    protected function outputHeadLine($line = '', $arguments = [])
+    protected function renderHeadLine($line = '', $arguments = [])
     {
         $this->headlineNumber++;
-        $this->outputLine();
-        $this->outputLine('<b>' . $this->headlineNumber . '. ' . $line . '</b>', $arguments);
-        $this->outputLine();
+        $this->renderLine();
+        $this->renderLine('<b>' . $this->headlineNumber . '. ' . $line . '</b>', $arguments);
+        $this->renderLine();
     }
 
     /**
      * @param string $line
      * @param array $arguments
      */
-    protected function outputLine(string $line = '', array $arguments = [])
+    protected function renderLine(string $line = '', array $arguments = [])
     {
         $filteredLine = $line;
         foreach ($this->secrets as $secret) {

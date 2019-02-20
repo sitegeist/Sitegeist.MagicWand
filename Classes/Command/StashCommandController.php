@@ -15,9 +15,6 @@ use Neos\Flow\Core\Bootstrap;
  */
 class StashCommandController extends AbstractCommandController
 {
-
-
-
     /**
      * Creates a new stash entry with the given name.
      *
@@ -32,10 +29,7 @@ class StashCommandController extends AbstractCommandController
         #     Build Paths     #
         #######################
 
-        $basePath = sprintf(
-            FLOW_PATH_ROOT . 'Data/MagicWandStash/%s',
-            $name
-        );
+        $basePath = $this->getStashEntryPath($name);
 
         $databaseDestination = $basePath . '/database.sql';
         $persistentDestination = $basePath . '/persistent/';
@@ -56,10 +50,28 @@ class StashCommandController extends AbstractCommandController
         $this->addSecret($this->databaseConfiguration['password']);
 
         ######################
+        #  Write Manifest    #
+        ######################
+        $this->renderHeadLine('Write Manifest');
+        $presetName = $this->configurationService->getCurrentPreset();
+        $presetConfiguration = $this->configurationService->getCurrentConfiguration();
+        $cloneTimestamp = $this->configurationService->getMostRecentCloneTimeStamp();
+        $stashTimestamp = time();
+
+        $this->writeStashEntryManifest($name, [
+            'preset' => [
+                'name' => $presetName,
+                'configuration' => $presetConfiguration
+            ],
+            'cloned_at' => $cloneTimestamp,
+            'stashed_at' => $stashTimestamp
+        ]);
+
+        ######################
         #  Backup Database   #
         ######################
 
-        $this->outputHeadLine('Backup Database');
+        $this->renderHeadLine('Backup Database');
         $this->executeLocalShellCommand(
             'mysqldump --single-transaction --add-drop-table --host="%s" --user="%s" --password="%s" %s > %s',
             [
@@ -75,7 +87,7 @@ class StashCommandController extends AbstractCommandController
         # Backup Persistent Resources #
         ###############################
 
-        $this->outputHeadLine('Backup Persistent Resources');
+        $this->renderHeadLine('Backup Persistent Resources');
         $this->executeLocalShellCommand(
             'cp -al %s %s',
             [
@@ -91,8 +103,8 @@ class StashCommandController extends AbstractCommandController
         $endTimestamp = time();
         $duration = $endTimestamp - $startTimestamp;
 
-        $this->outputHeadLine('Done');
-        $this->outputLine('Successfuly stashed %s in %s seconds', [$name, $duration]);
+        $this->renderHeadLine('Done');
+        $this->renderLine('Successfuly stashed %s in %s seconds', [$name, $duration]);
     }
 
     /**
@@ -102,10 +114,12 @@ class StashCommandController extends AbstractCommandController
      */
     public function listCommand()
     {
+        $head = ['Name', 'Stashed At', 'From Preset', 'Cloned At'];
+        $rows = [];
         $basePath = sprintf(FLOW_PATH_ROOT . 'Data/MagicWandStash');
 
         if (!is_dir($basePath)) {
-            $this->outputLine('Stash is empty.');
+            $this->renderLine('Stash is empty.');
             $this->quit(1);
         }
 
@@ -114,15 +128,26 @@ class StashCommandController extends AbstractCommandController
 
         foreach ($baseDir as $entry) {
             if (!in_array($entry, ['.', '..'])) {
-                $this->outputLine(' • %s', [$entry->getFilename()]);
+                $stashEntryName = $entry->getFilename();
+                $manifest = $this->readStashEntryManifest($stashEntryName) ?: [];
+
+                $rows[] = [
+                    $stashEntryName,
+                    $manifest['stashed_at'] ? date('Y-m-d H:i:s', $manifest['stashed_at']) : 'N/A',
+                    isset($manifest['preset']['name']) ? $manifest['preset']['name'] : 'N/A',
+                    $manifest['cloned_at'] ? date('Y-m-d H:i:s', $manifest['cloned_at']) : 'N/A',
+                ];
+
                 $anyEntry = true;
             }
         }
 
         if (!$anyEntry) {
-            $this->outputLine('Stash is empty.');
+            $this->renderLine('Stash is empty.');
             $this->quit(1);
         }
+
+        $this->output->outputTable($rows, $head);
     }
 
     /**
@@ -144,8 +169,8 @@ class StashCommandController extends AbstractCommandController
         $endTimestamp = time();
         $duration = $endTimestamp - $startTimestamp;
 
-        $this->outputHeadLine('Done');
-        $this->outputLine('Cleanup successful in %s seconds', [$duration]);
+        $this->renderHeadLine('Done');
+        $this->renderLine('Cleanup successful in %s seconds', [$duration]);
     }
 
     /**
@@ -158,7 +183,7 @@ class StashCommandController extends AbstractCommandController
      */
     public function restoreCommand($name, $yes = false, $keepDb = false)
     {
-        $basePath = sprintf(FLOW_PATH_ROOT . 'Data/MagicWandStash/%s', $name);
+        $basePath = $this->getStashEntryPath($name);
         $this->restoreStashEntry($basePath, $name, $yes, true, $keepDb);
     }
 
@@ -174,21 +199,21 @@ class StashCommandController extends AbstractCommandController
         $directory = FLOW_PATH_ROOT . 'Data/MagicWandStash/' . $name;
 
         if (!is_dir($directory)) {
-            $this->outputLine('<error>%s does not exist</error>', [$name]);
+            $this->renderLine('<error>%s does not exist</error>', [$name]);
             $this->quit(1);
         }
 
         if (!$yes) {
-            $this->outputLine("Are you sure you want to do this?  Type 'yes' to continue: ");
+            $this->renderLine("Are you sure you want to do this?  Type 'yes' to continue: ");
             $handle = fopen("php://stdin", "r");
             $line = fgets($handle);
 
             if (trim($line) != 'yes') {
-                $this->outputLine('exit');
+                $this->renderLine('exit');
                 $this->quit(1);
             } else {
-                $this->outputLine();
-                $this->outputLine();
+                $this->renderLine();
+                $this->renderLine();
             }
         }
 
@@ -208,8 +233,8 @@ class StashCommandController extends AbstractCommandController
         $endTimestamp = time();
         $duration = $endTimestamp - $startTimestamp;
 
-        $this->outputHeadLine('Done');
-        $this->outputLine('Cleanup removed stash %s in %s seconds', [$name, $duration]);
+        $this->renderHeadLine('Done');
+        $this->renderLine('Cleanup removed stash %s in %s seconds', [$name, $duration]);
     }
 
     /**
@@ -224,7 +249,7 @@ class StashCommandController extends AbstractCommandController
     protected function restoreStashEntry($source, $name, $force = false, $preserve = true, $keepDb = false)
     {
         if (!is_dir($source)) {
-            $this->outputLine('<error>%s does not exist</error>', [$name]);
+            $this->renderLine('<error>%s does not exist</error>', [$name]);
             $this->quit(1);
         }
 
@@ -233,16 +258,16 @@ class StashCommandController extends AbstractCommandController
         #################
 
         if (!$force) {
-            $this->outputLine("Are you sure you want to do this?  Type 'yes' to continue: ");
+            $this->renderLine("Are you sure you want to do this?  Type 'yes' to continue: ");
             $handle = fopen("php://stdin", "r");
             $line = fgets($handle);
 
             if (trim($line) != 'yes') {
-                $this->outputLine('exit');
+                $this->renderLine('exit');
                 $this->quit(1);
             } else {
-                $this->outputLine();
-                $this->outputLine();
+                $this->renderLine();
+                $this->renderLine();
             }
         }
 
@@ -270,14 +295,14 @@ class StashCommandController extends AbstractCommandController
         ########################
 
         if ($keepDb == false) {
-            $this->outputHeadLine('Drop and Recreate DB');
+            $this->renderHeadLine('Drop and Recreate DB');
 
             $emptyLocalDbSql = 'DROP DATABASE `'
                 . $this->databaseConfiguration['dbname']
                 . '`; CREATE DATABASE `'
                 . $this->databaseConfiguration['dbname']
                 . '` collate utf8_unicode_ci;';
-            
+
             $this->executeLocalShellCommand(
                 'echo %s | mysql --host=%s --user=%s --password=%s',
                 [
@@ -288,14 +313,14 @@ class StashCommandController extends AbstractCommandController
                 ]
             );
         } else {
-            $this->outputHeadLine('Skipped (Drop and Recreate DB)');
+            $this->renderHeadLine('Skipped (Drop and Recreate DB)');
         }
 
         ######################
         #  Restore Database  #
         ######################
 
-        $this->outputHeadLine('Restore Database');
+        $this->renderHeadLine('Restore Database');
         $this->executeLocalShellCommand(
             'mysql  --host="%s" --user="%s" --password="%s" %s < %s',
             [
@@ -311,7 +336,7 @@ class StashCommandController extends AbstractCommandController
         # Restore Persistent Resources #
         ################################
 
-        $this->outputHeadLine('Restore Persistent Resources');
+        $this->renderHeadLine('Restore Persistent Resources');
         $this->executeLocalShellCommand(
             'rm -rf %s && cp -al %s %1$s',
             [
@@ -329,7 +354,7 @@ class StashCommandController extends AbstractCommandController
         # Clear Caches #
         ################
 
-        $this->outputHeadLine('Clear Caches');
+        $this->renderHeadLine('Clear Caches');
         $this->executeLocalFlowCommand('flow:cache:flush');
 
 
@@ -337,15 +362,22 @@ class StashCommandController extends AbstractCommandController
         # Migrate DB #
         ##############
 
-        $this->outputHeadLine('Migrate DB');
+        $this->renderHeadLine('Migrate DB');
         $this->executeLocalFlowCommand('doctrine:migrate');
 
         #####################
         # Publish Resources #
         #####################
 
-        $this->outputHeadLine('Publish Resources');
+        $this->renderHeadLine('Publish Resources');
         $this->executeLocalFlowCommand('resource:publish');
+
+        #############################
+        # Restore Clone Information #
+        #############################
+        if($manifest = $this->readStashEntryManifest($name)) {
+            $this->configurationService->setCurrentStashEntry($name, $manifest);
+        }
 
         #################
         # Final Message #
@@ -354,8 +386,8 @@ class StashCommandController extends AbstractCommandController
         $endTimestamp = time();
         $duration = $endTimestamp - $startTimestamp;
 
-        $this->outputHeadLine('Done');
-        $this->outputLine('Successfuly restored %s in %s seconds', [$name, $duration]);
+        $this->renderHeadLine('Done');
+        $this->renderLine('Successfuly restored %s in %s seconds', [$name, $duration]);
     }
 
     /**
@@ -363,13 +395,66 @@ class StashCommandController extends AbstractCommandController
      */
     protected function checkConfiguration()
     {
-        $this->outputHeadLine('Check Configuration');
+        $this->renderHeadLine('Check Configuration');
 
         if ($this->databaseConfiguration['driver'] !== 'pdo_mysql') {
-            $this->outputLine(' only mysql is supported');
+            $this->renderLine(' only mysql is supported');
             $this->quit(1);
         }
 
-        $this->outputLine(' - Configuration seems ok ...');
+        $this->renderLine(' - Configuration seems ok ...');
+    }
+
+    /**
+     * @param string $stashEntryName
+     * @return string
+     */
+    protected function getStashEntryPath(string $stashEntryName): string
+    {
+        return sprintf(
+            FLOW_PATH_ROOT . 'Data/MagicWandStash/%s',
+            $stashEntryName
+        );
+    }
+
+    /**
+     * @param string $stashEntryName
+     * @return array|null
+     */
+    protected function readStashEntryManifest(string $stashEntryName): ?array
+    {
+        $manifestDestination = $this->getStashEntryPath($stashEntryName) . '/manifest.json';
+
+        if (file_exists($manifestDestination)) {
+            if ($manifest = json_decode(file_get_contents($manifestDestination), true)) {
+                if (is_array($manifest)) {
+                    return $manifest;
+                }
+            }
+
+            $this->outputLine('<error>Manifest file has been corrupted.</error>');
+        }
+
+        return null;
+    }
+
+    /**
+     * @param string $stashEntryName
+     * @param array $manifest
+     * @return void
+     */
+    protected function writeStashEntryManifest(string $stashEntryName, array $manifest): void
+    {
+        $manifestDestination = $this->getStashEntryPath($stashEntryName) . '/manifest.json';
+
+        // Create directory, if not exists
+        if (!file_exists(dirname($manifestDestination))) {
+            FileUtils::createDirectoryRecursively(dirname($manifestDestination));
+        }
+
+        // Write manifest file
+        file_put_contents($manifestDestination, json_encode($manifest, JSON_PRETTY_PRINT));
+
+        $this->outputLine('Wrote "%s"', [$manifestDestination]);
     }
 }

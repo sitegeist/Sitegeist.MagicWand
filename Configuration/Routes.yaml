@@ -1,0 +1,11 @@
+##
+# MagicWand-ResourceProxy
+
+-
+  name:  'MagicWand-ResourceProxy'
+  uriPattern: 'magicwand/resourceproxy/{resourceIdentifier}'
+  defaults:
+    '@package':    'Sitegeist.MagicWand'
+    '@controller': 'Resource'
+    '@action':     'index'
+  httpMethods: ['GET']
