@@ -25,7 +25,7 @@ class CloneCommandController extends AbstractCommandController
     protected $bootstrap;
 
     /**
-     * @var string
+     * @var array
      * @Flow\InjectConfiguration("clonePresets")
      */
     protected $clonePresets;
@@ -130,7 +130,7 @@ class CloneCommandController extends AbstractCommandController
      * @param string $port ssh port
      * @param string $path path on the remote server
      * @param string $context flow_context on the remote server
-     * @param mixded $postClone command or array of commands to be executed after cloning
+     * @param mixed $postClone command or array of commands to be executed after cloning
      * @param boolean $yes confirm execution without further input
      * @param boolean $keepDb skip dropping of database during sync
      * @param string $remoteFlowCommand the flow command to execute on the remote system
@@ -423,7 +423,6 @@ class CloneCommandController extends AbstractCommandController
 
     /**
      * @param $remotePersistenceConfiguration
-     * @param $this ->databaseConfiguration
      * @throws \Neos\Flow\Mvc\Exception\StopActionException
      */
     protected function checkConfiguration($remotePersistenceConfiguration)
