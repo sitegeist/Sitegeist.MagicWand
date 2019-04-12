@@ -64,15 +64,16 @@ class CloneCommandController extends AbstractCommandController
      *
      * @param boolean $yes confirm execution without further input
      * @param boolean $keepDb skip dropping of database during sync
+     * @param boolean $skipFiles skip files sync
      */
-    public function defaultCommand(bool $yes = false, bool $keepDb = false) : void
+    public function defaultCommand(bool $yes = false, bool $keepDb = false, bool $skipFiles = false) : void
     {
         if ($this->defaultPreset === null || $this->defaultPreset === '') {
             $this->renderLine('There is no default preset configured!');
             $this->quit(1);
         }
 
-        $this->presetCommand($this->defaultPreset, $yes, $keepDb);
+        $this->presetCommand($this->defaultPreset, $yes, $keepDb, $skipFiles);
     }
 
     /**
@@ -81,8 +82,9 @@ class CloneCommandController extends AbstractCommandController
      * @param string $presetName name of the preset from the settings
      * @param boolean $yes confirm execution without further input
      * @param boolean $keepDb skip dropping of database during sync
+     * @param boolean $skipFiles skip files sync
      */
-    public function presetCommand($presetName, $yes = false, $keepDb = false)
+    public function presetCommand($presetName, $yes = false, $keepDb = false, $skipFiles = false)
     {
         if (count($this->clonePresets) > 0) {
             if ($this->clonePresets && array_key_exists($presetName, $this->clonePresets)) {
@@ -107,7 +109,8 @@ class CloneCommandController extends AbstractCommandController
                     ),
                     (isset($configuration['sshOptions']) ?
                         $configuration['sshOptions'] : ''
-                    )
+                    ),
+                    $skipFiles
                 );
             } else {
                 $this->renderLine('The preset ' . $presetName . ' was not found!');
@@ -132,6 +135,7 @@ class CloneCommandController extends AbstractCommandController
      * @param boolean $keepDb skip dropping of database during sync
      * @param string $remoteFlowCommand the flow command to execute on the remote system
      * @param string $sshOptions additional options for the ssh command
+     * @param boolean $skipFiles skip the synchronization of resource files
      */
     protected function cloneRemoteHost(
         $host,
@@ -143,7 +147,8 @@ class CloneCommandController extends AbstractCommandController
         $yes = false,
         $keepDb = false,
         $remoteFlowCommand = null,
-        $sshOptions = ''
+        $sshOptions = '',
+        $skipFiles = false
     )
     {
         // fallback
@@ -293,33 +298,36 @@ class CloneCommandController extends AbstractCommandController
         ##################
 
         $resourceProxyConfiguration = $this->configurationService->getCurrentConfigurationByPath('resourceProxy');
-
-        if (!$resourceProxyConfiguration) {
-            $this->renderHeadLine('Transfer Files');
-            $this->executeLocalShellCommand(
-                'rsync -e "ssh -p %s %s" -kLr %s@%s:%s/* %s',
-                [
-                    $port,
-                    addslashes($sshOptions),
-                    $user,
-                    $host,
-                    $remoteDataPersistentPath,
-                    $localDataPersistentPath
-                ]
-            );
+        if(!$skipFiles) {
+            if (!$resourceProxyConfiguration) {
+                $this->renderHeadLine('Transfer Files');
+                $this->executeLocalShellCommand(
+                    'rsync -e "ssh -p %s %s" -kLr %s@%s:%s/* %s',
+                    [
+                        $port,
+                        addslashes($sshOptions),
+                        $user,
+                        $host,
+                        $remoteDataPersistentPath,
+                        $localDataPersistentPath
+                    ]
+                );
+            } else {
+                $this->renderHeadLine('Transfer Files - without Resources because a resourceProxyConfiguration is found');
+                $this->executeLocalShellCommand(
+                    'rsync -e "ssh -p %s %s" --exclude "Resources/*" -kLr %s@%s:%s/* %s',
+                    [
+                        $port,
+                        addslashes($sshOptions),
+                        $user,
+                        $host,
+                        $remoteDataPersistentPath,
+                        $localDataPersistentPath
+                    ]
+                );
+            }
         } else {
-            $this->renderHeadLine('Transfer Files - without Resources because a resourceProxyConfiguration is found');
-            $this->executeLocalShellCommand(
-                'rsync -e "ssh -p %s %s" --exclude "Resources/*" -kLr %s@%s:%s/* %s',
-                [
-                    $port,
-                    addslashes($sshOptions),
-                    $user,
-                    $host,
-                    $remoteDataPersistentPath,
-                    $localDataPersistentPath
-                ]
-            );
+            $this->renderHeadLine('Skipped (Transfer Files)');
         }
 
         #########################
