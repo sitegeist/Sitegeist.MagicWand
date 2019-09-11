@@ -22,7 +22,7 @@ class SimpleDBAL {
     public function buildCmd(string $driver, ?string $host, int $port, string $username, string $password, string $database): string
     {
         if ($driver === 'pdo_mysql') {
-            return sprintf('mysql --host=%s --port=%s --user=%s --password=%s %s', escapeshellarg($host), escapeshellarg($port), escapeshellarg($username), escapeshellarg($password), escapeshellarg($database));
+            return sprintf('mysql --host=%s --port=%s --user=%s --password=\'%s\' %s', escapeshellarg($host), escapeshellarg($port), escapeshellarg($username), escapeshellarg($password), escapeshellarg($database));
         } else if ($driver === 'pdo_pgsql') {
             return sprintf('PGOPTIONS=--client-min-messages=warning PGPASSWORD=%s psql --quiet --host=%s --port=%s --username=%s --dbname=%s', escapeshellarg($password), escapeshellarg($host), escapeshellarg($port), escapeshellarg($username), escapeshellarg($database));
         }
