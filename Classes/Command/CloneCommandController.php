@@ -209,8 +209,12 @@ class CloneCommandController extends AbstractCommandController
 
         $this->addSecret($this->databaseConfiguration['user']);
         $this->addSecret($this->databaseConfiguration['password']);
+        $this->addSecret(escapeshellcmd($this->databaseConfiguration['password']));
+        $this->addSecret(escapeshellarg(escapeshellcmd($this->databaseConfiguration['password'])));
         $this->addSecret($remotePersistenceConfiguration['user']);
         $this->addSecret($remotePersistenceConfiguration['password']);
+        $this->addSecret(escapeshellcmd($remotePersistenceConfiguration['password']));
+        $this->addSecret(escapeshellarg(escapeshellcmd($remotePersistenceConfiguration['password'])));
 
         #######################
         # Check Configuration #
