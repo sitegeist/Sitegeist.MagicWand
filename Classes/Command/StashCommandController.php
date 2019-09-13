@@ -9,12 +9,19 @@ namespace Sitegeist\MagicWand\Command;
 use Neos\Flow\Annotations as Flow;
 use Neos\Utility\Files as FileUtils;
 use Neos\Flow\Core\Bootstrap;
+use Sitegeist\MagicWand\DBAL\SimpleDBAL;
 
 /**
  * @Flow\Scope("singleton")
  */
 class StashCommandController extends AbstractCommandController
 {
+    /**
+     * @Flow\Inject
+     * @var SimpleDBAL
+     */
+    protected $dbal;
+
     /**
      * Creates a new stash entry with the given name.
      *
@@ -48,6 +55,15 @@ class StashCommandController extends AbstractCommandController
 
         $this->addSecret($this->databaseConfiguration['user']);
         $this->addSecret($this->databaseConfiguration['password']);
+        $this->addSecret(escapeshellcmd($this->databaseConfiguration['password']));
+        $this->addSecret(escapeshellarg(escapeshellcmd($this->databaseConfiguration['password'])));
+
+        ################################################
+        # Fallback to default MySQL port if not given. #
+        ################################################
+        if (!isset($this->databaseConfiguration['port'])) {
+            $this->databaseConfiguration['port'] = $this->dbal->getDefaultPort($this->databaseConfiguration['driver']);
+        }
 
         ######################
         #  Write Manifest    #
@@ -72,15 +88,16 @@ class StashCommandController extends AbstractCommandController
         ######################
 
         $this->renderHeadLine('Backup Database');
+
         $this->executeLocalShellCommand(
-            'mysqldump --single-transaction --add-drop-table --host="%s" --user="%s" --password="%s" %s > %s',
-            [
+            $this->dbal->buildDumpCmd(
+                $this->databaseConfiguration['driver'],
                 $this->databaseConfiguration['host'],
+                (int)$this->databaseConfiguration['port'],
                 $this->databaseConfiguration['user'],
                 $this->databaseConfiguration['password'],
-                $this->databaseConfiguration['dbname'],
-                $databaseDestination
-            ]
+                $this->databaseConfiguration['dbname']
+            ) . ' > ' . $databaseDestination
         );
 
         ###############################
@@ -289,6 +306,15 @@ class StashCommandController extends AbstractCommandController
 
         $this->addSecret($this->databaseConfiguration['user']);
         $this->addSecret($this->databaseConfiguration['password']);
+        $this->addSecret(escapeshellcmd($this->databaseConfiguration['password']));
+        $this->addSecret(escapeshellarg(escapeshellcmd($this->databaseConfiguration['password'])));
+
+        ################################################
+        # Fallback to default MySQL port if not given. #
+        ################################################
+        if (!isset($this->databaseConfiguration['port'])) {
+            $this->databaseConfiguration['port'] = $this->dbal->getDefaultPort($this->databaseConfiguration['driver']);
+        }
 
         ########################
         # Drop and Recreate DB #
@@ -297,21 +323,26 @@ class StashCommandController extends AbstractCommandController
         if ($keepDb == false) {
             $this->renderHeadLine('Drop and Recreate DB');
 
-            $emptyLocalDbSql = 'DROP DATABASE `'
-                . $this->databaseConfiguration['dbname']
-                . '`; CREATE DATABASE `'
-                . $this->databaseConfiguration['dbname']
-                . '` collate utf8_unicode_ci;';
+            $emptyLocalDbSql = $this->dbal->flushDbSql(
+                $this->databaseConfiguration['driver'],
+                $this->databaseConfiguration['dbname']
+            );
 
             $this->executeLocalShellCommand(
-                'echo %s | mysql --host=%s --user=%s --password=%s',
+                'echo %s | %s',
                 [
                     escapeshellarg($emptyLocalDbSql),
-                    $this->databaseConfiguration['host'],
-                    $this->databaseConfiguration['user'],
-                    $this->databaseConfiguration['password']
+                    $this->dbal->buildCmd(
+                        $this->databaseConfiguration['driver'],
+                        $this->databaseConfiguration['host'],
+                        (int)$this->databaseConfiguration['port'],
+                        $this->databaseConfiguration['user'],
+                        $this->databaseConfiguration['password'],
+                        $this->databaseConfiguration['dbname']
+                    )
                 ]
             );
+
         } else {
             $this->renderHeadLine('Skipped (Drop and Recreate DB)');
         }
@@ -321,15 +352,16 @@ class StashCommandController extends AbstractCommandController
         ######################
 
         $this->renderHeadLine('Restore Database');
+
         $this->executeLocalShellCommand(
-            'mysql  --host="%s" --user="%s" --password="%s" %s < %s',
-            [
+            $this->dbal->buildCmd(
+                $this->databaseConfiguration['driver'],
                 $this->databaseConfiguration['host'],
+                (int)$this->databaseConfiguration['port'],
                 $this->databaseConfiguration['user'],
                 $this->databaseConfiguration['password'],
-                $this->databaseConfiguration['dbname'],
-                $source . '/database.sql'
-            ]
+                $this->databaseConfiguration['dbname']
+            ) . ' < ' . $source . '/database.sql'
         );
 
         ################################
