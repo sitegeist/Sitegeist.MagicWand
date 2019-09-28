@@ -2,6 +2,7 @@
 namespace Sitegeist\MagicWand\ResourceManagement;
 
 use Neos\Flow\Annotations as Flow;
+use Neos\Flow\Core\Bootstrap;
 use Neos\Flow\ResourceManagement\CollectionInterface;
 use Neos\Flow\ResourceManagement\PersistentResource;
 use Neos\Flow\ResourceManagement\ResourceManager;
@@ -17,6 +18,12 @@ use Neos\Flow\ResourceManagement\Storage\StorageObject;
 
 class ProxyAwareFileSystemSymlinkTarget extends FileSystemSymlinkTarget
 {
+    /**
+     * @Flow\Inject
+     * @var Bootstrap
+     */
+    protected $bootstrap;
+
     /**
      * @var ConfigurationService
      * @Flow\Inject
