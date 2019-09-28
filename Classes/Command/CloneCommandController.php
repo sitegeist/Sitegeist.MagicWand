@@ -278,7 +278,7 @@ class CloneCommandController extends AbstractCommandController
                     $remotePersistenceConfiguration['host'],
                     (int)$remotePersistenceConfiguration['port'],
                     $remotePersistenceConfiguration['user'],
-                    $remotePersistenceConfiguration['password'],
+                    escapeshellcmd($remotePersistenceConfiguration['password']),
                     $remotePersistenceConfiguration['dbname']
                 ),
                 $this->dbal->buildCmd(
