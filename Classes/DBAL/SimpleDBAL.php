@@ -22,9 +22,9 @@ class SimpleDBAL {
     public function buildCmd(string $driver, ?string $host, int $port, string $username, string $password, string $database): string
     {
         if ($driver === 'pdo_mysql') {
-            return sprintf('mysql --host=%s --port=%s --user=%s --password=%s %s', escapeshellarg($host), escapeshellarg($port), escapeshellarg($username), escapeshellarg(escapeshellcmd($password)), escapeshellarg($database));
+            return sprintf('mysql --host=%s --port=%s --user=%s --password=%s %s', escapeshellarg($host), escapeshellarg($port), escapeshellarg($username), escapeshellarg($password), escapeshellarg($database));
         } else if ($driver === 'pdo_pgsql') {
-            return sprintf('PGOPTIONS=--client-min-messages=warning PGPASSWORD=%s psql --quiet --host=%s --port=%s --username=%s --dbname=%s', escapeshellarg(escapeshellcmd($password)), escapeshellarg($host), escapeshellarg($port), escapeshellarg($username), escapeshellarg($database));
+            return sprintf('PGOPTIONS=--client-min-messages=warning PGPASSWORD=%s psql --quiet --host=%s --port=%s --username=%s --dbname=%s', escapeshellarg($password), escapeshellarg($host), escapeshellarg($port), escapeshellarg($username), escapeshellarg($database));
         }
     }
 
@@ -40,9 +40,9 @@ class SimpleDBAL {
     public function buildDumpCmd(string $driver, ?string $host, int $port, string $username, string $password, string $database): string
     {
         if ($driver === 'pdo_mysql') {
-            return sprintf('mysqldump --single-transaction --add-drop-table --host=%s --port=%d --user=%s --password=%s %s', escapeshellarg($host), escapeshellarg($port), escapeshellarg($username), escapeshellarg(escapeshellcmd($password)), escapeshellarg($database));
+            return sprintf('mysqldump --single-transaction --add-drop-table --host=%s --port=%d --user=%s --password=%s %s', escapeshellarg($host), escapeshellarg($port), escapeshellarg($username), escapeshellarg($password), escapeshellarg($database));
         } else if ($driver === 'pdo_pgsql') {
-            return sprintf('PGPASSWORD=%s pg_dump --host=%s --port=%s --username=%s --dbname=%s --schema=public --no-owner --no-privileges', escapeshellarg(escapeshellcmd($password)), escapeshellarg($host), escapeshellarg($port), escapeshellarg($username), escapeshellarg($database));
+            return sprintf('PGPASSWORD=%s pg_dump --host=%s --port=%s --username=%s --dbname=%s --schema=public --no-owner --no-privileges', escapeshellarg($password), escapeshellarg($host), escapeshellarg($port), escapeshellarg($username), escapeshellarg($database));
         }
     }
 
