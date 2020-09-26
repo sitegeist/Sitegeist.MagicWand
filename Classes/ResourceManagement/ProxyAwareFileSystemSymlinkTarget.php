@@ -3,6 +3,8 @@ namespace Sitegeist\MagicWand\ResourceManagement;
 
 use Neos\Flow\Annotations as Flow;
 use Neos\Flow\Core\Bootstrap;
+use Neos\Flow\Http\Exception as HttpException;
+use Neos\Flow\Mvc\Routing\Exception\MissingActionNameException;
 use Neos\Flow\ResourceManagement\CollectionInterface;
 use Neos\Flow\ResourceManagement\PersistentResource;
 use Neos\Flow\ResourceManagement\ResourceManager;
@@ -16,7 +18,7 @@ use Sitegeist\MagicWand\Domain\Service\ConfigurationService;
 use Sitegeist\MagicWand\ResourceManagement\ProxyAwareWritableFileSystemStorage;
 use Neos\Flow\ResourceManagement\Storage\StorageObject;
 
-class ProxyAwareFileSystemSymlinkTarget extends FileSystemSymlinkTarget
+class ProxyAwareFileSystemSymlinkTarget extends FileSystemSymlinkTarget implements ProxyAwareTargetInterface
 {
     /**
      * @Flow\Inject
@@ -69,15 +71,17 @@ class ProxyAwareFileSystemSymlinkTarget extends FileSystemSymlinkTarget
     public function publishCollection(CollectionInterface $collection, callable $callback = null)
     {
         if (!$this->configurationService->getCurrentConfigurationByPath('resourceProxy')) {
-            return parent::publishCollection($collection, $callback);
+            parent::publishCollection($collection, $callback);
+            return;
         }
 
         /**
          * @var ProxyAwareWritableFileSystemStorage $storage
          */
         $storage = $collection->getStorage();
-        if (!$storage instanceof ProxyAwareWritableFileSystemStorage) {
-            return parent::publishCollection($collection, $callback);
+        if (!$storage instanceof ProxyAwareStorageInterface) {
+            parent::publishCollection($collection, $callback);
+            return;
         }
 
         foreach ($collection->getObjects($callback) as $object) {
@@ -97,6 +101,8 @@ class ProxyAwareFileSystemSymlinkTarget extends FileSystemSymlinkTarget
      * @param PersistentResource $resource
      * @return string
      * @throws Exception
+     * @throws HttpException
+     * @throws MissingActionNameException
      */
     public function getPublicPersistentResourceUri(PersistentResource $resource)
     {
@@ -107,7 +113,7 @@ class ProxyAwareFileSystemSymlinkTarget extends FileSystemSymlinkTarget
         $collection = $this->resourceManager->getCollection($resource->getCollectionName());
         $storage = $collection->getStorage();
 
-        if (!$storage instanceof ProxyAwareWritableFileSystemStorage) {
+        if (!$storage instanceof ProxyAwareStorageInterface) {
             return parent::getPublicPersistentResourceUri($resource);
         }
 
@@ -115,7 +121,7 @@ class ProxyAwareFileSystemSymlinkTarget extends FileSystemSymlinkTarget
             return parent::getPublicPersistentResourceUri($resource);
         }
 
-        // build uri to resoucre controller that will fetch and publish
+        // build uri to resource controller that will fetch and publish
         // the resource asynchronously
         return $this->uriBuilder->uriFor(
             'index',
