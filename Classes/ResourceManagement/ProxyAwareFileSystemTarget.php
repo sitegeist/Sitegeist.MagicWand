@@ -1,14 +1,16 @@
 <?php
+declare(strict_types=1);
+
 namespace Sitegeist\MagicWand\ResourceManagement;
 
 use Neos\Flow\Annotations as Flow;
 use Neos\Flow\Core\Bootstrap;
 use Neos\Flow\Mvc\Routing\UriBuilder;
 use Neos\Flow\ResourceManagement\ResourceManager;
-use Neos\Flow\ResourceManagement\Target\FileSystemSymlinkTarget;
+use Neos\Flow\ResourceManagement\Target\FileSystemTarget;
 use Sitegeist\MagicWand\Domain\Service\ConfigurationService;
 
-class ProxyAwareFileSystemSymlinkTarget extends FileSystemSymlinkTarget implements ProxyAwareTargetInterface
+class ProxyAwareFileSystemTarget extends FileSystemTarget implements ProxyAwareTargetInterface
 {
     use ProxyAwareTargetTrait;
 
