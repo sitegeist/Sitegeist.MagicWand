@@ -48,11 +48,12 @@ class ProxyAwareFileSystemSymlinkTarget extends FileSystemSymlinkTarget
      */
     protected $resourceManager;
 
-    public function initializeObject() {
-        // intialize uribuilder with request
+    public function initializeObject()
+    {
+        // initialize uriBuilder with request
         $requestHandler = $this->bootstrap->getActiveRequestHandler();
         if ($requestHandler instanceof HttpRequestHandlerInterface) {
-            $request = new ActionRequest($requestHandler->getHttpRequest());
+            $request = ActionRequest::fromHttpRequest($requestHandler->getComponentContext()->getHttpRequest());
             $this->uriBuilder->setRequest($request);
         }
         parent::initializeObject();
