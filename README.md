@@ -9,6 +9,7 @@ section of your composer.json**.
 
 * Wilhelm Behncke - behncke@sitegeist.de
 * Martin Ficzel - ficzel@sitegeist.de
+* ... and others
 
 *The development and the public-releases of this package is generously sponsored by our employer https://www.sitegeist.de.*
 
@@ -107,6 +108,15 @@ the commands.**
 ./flow stash:clear
 ```
 **Note:** Use this command on a regular basis, because your stash tends to grow **very** large.
+
+## Resource proxies
+
+While cloning the database to your local dev system is manageable even for larger projects, downloading all the assets is often not an option.
+
+For this case the package offers the concept of resource proxies. Once activated, only the resources that are actually used are downloaded just at the moment they are rendered.
+This is done by custom implementations of `WritableFileSystemStorage` and `ProxyAwareFileSystemSymlinkTarget` and works out of the box if you use this storage and target in you local development environment.
+If you use other local storages, for example a local S3 storage, you can easily build your own proxy aware versions implementing the interfaces `ProxyAwareStorageInterface` and `ProxyAwareTargetInterface`of this package.
+
 
 ## Installation
 
