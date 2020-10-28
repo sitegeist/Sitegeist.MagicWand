@@ -11,7 +11,7 @@ use Neos\Flow\ResourceManagement\Storage\WritableFileSystemStorage;
 use Sitegeist\MagicWand\Domain\Service\ConfigurationService;
 use Neos\Utility\Files;
 
-class ProxyAwareWritableFileSystemStorage extends WritableFileSystemStorage
+class ProxyAwareWritableFileSystemStorage extends WritableFileSystemStorage implements ProxyAwareStorageInterface
 {
     /**
      * @var ConfigurationService
@@ -26,11 +26,12 @@ class ProxyAwareWritableFileSystemStorage extends WritableFileSystemStorage
     protected $resourceManager;
 
     /**
-     * @param PersistentResource $resource
-     * @return string
+     * @param ResourceMetaDataInterface $resource
+     * @return bool
      */
-    public function resourceIsPresentInStorage(ResourceMetaDataInterface $resource) {
-        $path =  $this->getStoragePathAndFilenameByHash($resource->getSha1());
+    public function resourceIsPresentInStorage(ResourceMetaDataInterface $resource): bool
+    {
+        $path = $this->getStoragePathAndFilenameByHash($resource->getSha1());
         return file_exists($path);
     }
 
@@ -57,7 +58,7 @@ class ProxyAwareWritableFileSystemStorage extends WritableFileSystemStorage
 
         $curlEngine = new CurlEngine();
         $curlOptions = $resourceProxyConfiguration['curlOptions'] ?? [];
-        foreach($curlOptions as $key => $value) {
+        foreach ($curlOptions as $key => $value) {
             $curlEngine->setOption(constant($key), $value);
         }
 
@@ -67,16 +68,16 @@ class ProxyAwareWritableFileSystemStorage extends WritableFileSystemStorage
         $subdivideHashPathSegment = $resourceProxyConfiguration['subdivideHashPathSegment'] ?? false;
         if ($subdivideHashPathSegment) {
             $sha1Hash = $resource->getSha1();
-            $uri = $resourceProxyConfiguration['baseUri'] .'/_Resources/Persistent/' . $sha1Hash[0] . '/' . $sha1Hash[1] . '/' . $sha1Hash[2] . '/' . $sha1Hash[3] . '/' . $sha1Hash . '/' . rawurlencode($resource->getFilename());
+            $uri = $resourceProxyConfiguration['baseUri'] . '/_Resources/Persistent/' . $sha1Hash[0] . '/' . $sha1Hash[1] . '/' . $sha1Hash[2] . '/' . $sha1Hash[3] . '/' . $sha1Hash . '/' . rawurlencode($resource->getFilename());
         } else {
-            $uri = $resourceProxyConfiguration['baseUri'] .'/_Resources/Persistent/' . $resource->getSha1() . '/' . rawurlencode($resource->getFilename());
+            $uri = $resourceProxyConfiguration['baseUri'] . '/_Resources/Persistent/' . $resource->getSha1() . '/' . rawurlencode($resource->getFilename());
         }
 
         $response = $browser->request($uri);
 
-        if ($response->getStatusCode() == 200 ) {
+        if ($response->getStatusCode() == 200) {
             $stream = $response->getBody()->detach();
-            $targetPathAndFilename =  $this->getStoragePathAndFilenameByHash($resource->getSha1());
+            $targetPathAndFilename = $this->getStoragePathAndFilenameByHash($resource->getSha1());
             if (!file_exists(dirname($targetPathAndFilename))) {
                 Files::createDirectoryRecursively(dirname($targetPathAndFilename));
             }
