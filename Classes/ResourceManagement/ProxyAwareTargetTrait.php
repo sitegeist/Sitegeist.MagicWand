@@ -3,18 +3,14 @@
 namespace Sitegeist\MagicWand\ResourceManagement;
 
 use Neos\Flow\Annotations as Flow;
-use Neos\Flow\Core\Bootstrap;
 use Neos\Flow\Http\Exception as HttpException;
 use Neos\Flow\Http\HttpRequestHandlerInterface;
 use Neos\Flow\Mvc\ActionRequest;
 use Neos\Flow\Mvc\Routing\Exception\MissingActionNameException;
-use Neos\Flow\Mvc\Routing\UriBuilder;
 use Neos\Flow\ResourceManagement\CollectionInterface;
 use Neos\Flow\ResourceManagement\PersistentResource;
-use Neos\Flow\ResourceManagement\ResourceManager;
 use Neos\Flow\ResourceManagement\Storage\StorageObject;
 use Neos\Flow\ResourceManagement\Target\Exception;
-use Sitegeist\MagicWand\Domain\Service\ConfigurationService;
 
 trait ProxyAwareTargetTrait
 {
@@ -23,7 +19,7 @@ trait ProxyAwareTargetTrait
         // initialize uriBuilder with request
         $requestHandler = $this->bootstrap->getActiveRequestHandler();
         if ($requestHandler instanceof HttpRequestHandlerInterface) {
-            $request = ActionRequest::fromHttpRequest($requestHandler->getComponentContext()->getHttpRequest());
+            $request = ActionRequest::fromHttpRequest($requestHandler->getHttpRequest());
             $this->uriBuilder->setRequest($request);
         }
         parent::initializeObject();
