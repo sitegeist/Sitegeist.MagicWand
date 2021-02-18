@@ -9,10 +9,11 @@ use Neos\Flow\Annotations as Flow;
 use Neos\Utility\Arrays;
 use Neos\Flow\Core\Bootstrap;
 
-class SimpleDBAL {
+class SimpleDBAL
+{
     /**
      * @param string $driver
-     * @param string $host
+     * @param string|null $host
      * @param int $port
      * @param string $username
      * @param string $password
@@ -30,21 +31,54 @@ class SimpleDBAL {
 
     /**
      * @param string $driver
-     * @param string $host
+     * @param string|null $host
      * @param int $port
      * @param string $username
      * @param string $password
      * @param string $database
+     * @param array $excludeTables
      * @return string
      */
-    public function buildDumpCmd(string $driver, ?string $host, int $port, string $username, string $password, string $database): string
+    public function buildDataDumpCmd(string $driver, ?string $host, int $port, string $username, string $password, string $database, array $excludeTables = []): string
     {
+        $buildExcludeTableParameters = static function (string $parameterName) use ($excludeTables, $database) {
+            return implode(' ', array_map(static function (string $excludeTable) use ($parameterName, $database) {
+                return sprintf('%s %s.%s', $parameterName, $database, $excludeTable);
+            }, $excludeTables));
+        };
+
         if ($driver === 'pdo_mysql') {
-            return sprintf('mysqldump --single-transaction --add-drop-table --no-tablespaces --host=%s --port=%s --user=%s --password=%s %s', escapeshellarg($host), escapeshellarg($port), escapeshellarg($username), escapeshellarg($password), escapeshellarg($database));
+            return sprintf('mysqldump --single-transaction --add-drop-table --no-tablespaces --host=%s --port=%s --user=%s --password=%s %s %s', escapeshellarg($host), escapeshellarg($port), escapeshellarg($username), escapeshellarg($password), $buildExcludeTableParameters('--ignore-table'), escapeshellarg($database));
         } else if ($driver === 'pdo_pgsql') {
-            return sprintf('PGPASSWORD=%s pg_dump --host=%s --port=%s --username=%s --dbname=%s --schema=public --no-owner --no-privileges', escapeshellarg($password), escapeshellarg($host), escapeshellarg($port), escapeshellarg($username), escapeshellarg($database));
+            return sprintf('PGPASSWORD=%s pg_dump --host=%s --port=%s --username=%s  %s --dbname=%s --schema=public --no-owner --no-privileges', escapeshellarg($password), escapeshellarg($host), escapeshellarg($port), escapeshellarg($username), $buildExcludeTableParameters('--exclude-table'), escapeshellarg($database));
         }
     }
+
+    /**
+     * @param string $driver
+     * @param string|null $host
+     * @param int $port
+     * @param string $username
+     * @param string $password
+     * @param string $database
+     * @param array $tables
+     * @return string
+     */
+    public function buildSchemaDumpCmd(string $driver, ?string $host, int $port, string $username, string $password, string $database, array $tables = []): string
+    {
+        $buildOnlyTableParameters = static function (string $parameterName = '') use ($tables) {
+            return implode(' ', array_map(static function (string $table) use ($parameterName) {
+                return trim($parameterName . ' ' . $table);
+            }, $tables));
+        };
+
+        if ($driver === 'pdo_mysql') {
+            return sprintf('mysqldump --single-transaction --add-drop-table --no-tablespaces --no-data --host=%s --port=%s --user=%s --password=%s %s %s', escapeshellarg($host), escapeshellarg($port), escapeshellarg($username), escapeshellarg($password), escapeshellarg($database), $buildOnlyTableParameters());
+        } else if ($driver === 'pdo_pgsql') {
+            return sprintf('PGPASSWORD=%s pg_dump --host=%s --port=%s --username=%s --dbname=%s --schema=public --no-owner --no-privileges --schema-only %s', escapeshellarg($password), escapeshellarg($host), escapeshellarg($port), escapeshellarg($username), escapeshellarg($database), $buildOnlyTableParameters('-t'));
+        }
+    }
+
 
     /**
      * @param string $driver

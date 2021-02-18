@@ -7,6 +7,8 @@ namespace Sitegeist\MagicWand\Command;
  *                                                                        */
 
 use Neos\Flow\Annotations as Flow;
+use Neos\Flow\Cli\Exception\StopCommandException;
+use Neos\Flow\Mvc\Exception\StopActionException;
 use Neos\Utility\Arrays;
 use Neos\Flow\Core\Bootstrap;
 use Sitegeist\MagicWand\DBAL\SimpleDBAL;
@@ -65,7 +67,7 @@ class CloneCommandController extends AbstractCommandController
      * @param boolean $yes confirm execution without further input
      * @param boolean $keepDb skip dropping of database during sync
      */
-    public function defaultCommand(bool $yes = false, bool $keepDb = false) : void
+    public function defaultCommand(bool $yes = false, bool $keepDb = false): void
     {
         if ($this->defaultPreset === null || $this->defaultPreset === '') {
             $this->renderLine('There is no default preset configured!');
@@ -97,17 +99,12 @@ class CloneCommandController extends AbstractCommandController
                     $configuration['port'],
                     $configuration['path'],
                     $configuration['context'],
-                    (isset($configuration['postClone']) ?
-                        $configuration['postClone'] : null
-                    ),
+                    $configuration['clone'] ?? null,
+                    $configuration['postClone'] ?? null,
                     $yes,
                     $keepDb,
-                    (isset($configuration['flowCommand']) ?
-                        $configuration['flowCommand'] : null
-                    ),
-                    (isset($configuration['sshOptions']) ?
-                        $configuration['sshOptions'] : ''
-                    )
+                    $configuration['flowCommand'] ?? null,
+                    $configuration['sshOptions'] ?? ''
                 );
             } else {
                 $this->renderLine('The preset ' . $presetName . ' was not found!');
@@ -127,11 +124,14 @@ class CloneCommandController extends AbstractCommandController
      * @param string $port ssh port
      * @param string $path path on the remote server
      * @param string $context flow_context on the remote server
-     * @param mixded $postClone command or array of commands to be executed after cloning
+     * @param null $clone
+     * @param null $postClone command or array of commands to be executed after cloning
      * @param boolean $yes confirm execution without further input
      * @param boolean $keepDb skip dropping of database during sync
-     * @param string $remoteFlowCommand the flow command to execute on the remote system
+     * @param null $remoteFlowCommand the flow command to execute on the remote system
      * @param string $sshOptions additional options for the ssh command
+     * @throws StopCommandException
+     * @throws StopActionException
      */
     protected function cloneRemoteHost(
         $host,
@@ -139,6 +139,7 @@ class CloneCommandController extends AbstractCommandController
         $port,
         $path,
         $context = 'Production',
+        $clone = null,
         $postClone = null,
         $yes = false,
         $keepDb = false,
@@ -176,7 +177,7 @@ class CloneCommandController extends AbstractCommandController
         );
 
         if ($remotePersistenceConfigurationYaml) {
-            $remotePersistenceConfiguration = \Symfony\Component\Yaml\Yaml::parse($remotePersistenceConfigurationYaml);
+            $remotePersistenceConfiguration = Yaml::parse($remotePersistenceConfigurationYaml);
         }
         $remoteDataPersistentPath = $path . '/Data/Persistent';
 
@@ -265,6 +266,8 @@ class CloneCommandController extends AbstractCommandController
         #  Transfer Database #
         ######################
 
+        $tableContentToSkip = $clone['database']['excludeTableContent'] ?? [];
+
         $this->renderHeadLine('Transfer Database');
         $this->executeLocalShellCommand(
             'ssh -p %s %s %s@%s -- %s | %s',
@@ -273,13 +276,14 @@ class CloneCommandController extends AbstractCommandController
                 $sshOptions,
                 $user,
                 $host,
-                $this->dbal->buildDumpCmd(
+                $this->dbal->buildDataDumpCmd(
                     $remotePersistenceConfiguration['driver'],
                     $remotePersistenceConfiguration['host'],
                     (int)$remotePersistenceConfiguration['port'],
                     $remotePersistenceConfiguration['user'],
                     escapeshellcmd($remotePersistenceConfiguration['password']),
-                    $remotePersistenceConfiguration['dbname']
+                    $remotePersistenceConfiguration['dbname'],
+                    $tableContentToSkip
                 ),
                 $this->dbal->buildCmd(
                     $this->databaseConfiguration['driver'],
@@ -291,6 +295,35 @@ class CloneCommandController extends AbstractCommandController
                 )
             ]
         );
+
+        if (count($tableContentToSkip) > 0) {
+            $this->executeLocalShellCommand(
+                'ssh -p %s %s %s@%s -- %s | %s',
+                [
+                    $port,
+                    $sshOptions,
+                    $user,
+                    $host,
+                    $this->dbal->buildSchemaDumpCmd(
+                        $remotePersistenceConfiguration['driver'],
+                        $remotePersistenceConfiguration['host'],
+                        (int)$remotePersistenceConfiguration['port'],
+                        $remotePersistenceConfiguration['user'],
+                        escapeshellcmd($remotePersistenceConfiguration['password']),
+                        $remotePersistenceConfiguration['dbname'],
+                        $tableContentToSkip
+                    ),
+                    $this->dbal->buildCmd(
+                        $this->databaseConfiguration['driver'],
+                        $this->databaseConfiguration['host'],
+                        (int)$this->databaseConfiguration['port'],
+                        $this->databaseConfiguration['user'],
+                        $this->databaseConfiguration['password'],
+                        $this->databaseConfiguration['dbname']
+                    )
+                ]
+            );
+        }
 
         ##################
         # Transfer Files #
@@ -372,7 +405,7 @@ class CloneCommandController extends AbstractCommandController
         ##################
         # Set DB charset #
         ##################
-        if ($this->databaseConfiguration['driver'] == 'pdo_mysql' && $remotePersistenceConfiguration['charset'] != 'utf8mb4' ) {
+        if ($this->databaseConfiguration['driver'] == 'pdo_mysql' && $remotePersistenceConfiguration['charset'] != 'utf8mb4') {
             $this->renderHeadLine('Set DB charset');
             $this->executeLocalFlowCommand('database:setcharset');
         }
@@ -420,9 +453,9 @@ class CloneCommandController extends AbstractCommandController
     /**
      * @param $remotePersistenceConfiguration
      * @param $this ->databaseConfiguration
-     * @throws \Neos\Flow\Mvc\Exception\StopActionException
+     * @throws StopCommandException
      */
-    protected function checkConfiguration($remotePersistenceConfiguration)
+    protected function checkConfiguration($remotePersistenceConfiguration): void
     {
         $this->renderHeadLine('Check Configuration');
         if (!$this->dbal->driverIsSupported($remotePersistenceConfiguration['driver'])

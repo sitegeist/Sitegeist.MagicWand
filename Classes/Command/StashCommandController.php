@@ -90,7 +90,7 @@ class StashCommandController extends AbstractCommandController
         $this->renderHeadLine('Backup Database');
 
         $this->executeLocalShellCommand(
-            $this->dbal->buildDumpCmd(
+            $this->dbal->buildDataDumpCmd(
                 $this->databaseConfiguration['driver'],
                 $this->databaseConfiguration['host'],
                 (int)$this->databaseConfiguration['port'],
