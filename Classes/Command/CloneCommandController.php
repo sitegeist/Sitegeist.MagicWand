@@ -420,9 +420,10 @@ class CloneCommandController extends AbstractCommandController
         #####################
         # Publish Resources #
         #####################
-
-        $this->renderHeadLine('Publish Resources');
-        $this->executeLocalFlowCommand('resource:publish');
+        if (!($clone['skipResourcePublishStep'] ?? false)) {
+            $this->renderHeadLine('Publish Resources');
+            $this->executeLocalFlowCommand('resource:publish');
+        }
 
         ##############
         # Post Clone #
