@@ -65,6 +65,9 @@ Sitegeist:
         # default is the main flowCommand-Setting
         flowCommand: ~
 
+        # options to adjust the clone process
+        clone: []
+
         # commands to execute after cloning like ./flow user:create ...
         postClone: []
 

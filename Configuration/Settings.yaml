@@ -31,6 +31,16 @@ Sitegeist:
 #        # default is the main flowCommand-Setting
 #        flowCommand: ~
 #
+#        # options to adjust the clone process
+#        clone:
+#          # Optionally skip the publish step
+#          skipResourcePublishStep: false
+#          database:
+#            # List tables of which only the schema should be cloned without data. This can be used to exclude
+#            # large tables or tables containing confident conten
+#            excludeTableContent: []
+#
+#
 #        # commands to execute after cloning
 #        postClone:
 #         - './flow help'
