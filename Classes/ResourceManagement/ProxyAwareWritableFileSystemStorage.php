@@ -65,12 +65,13 @@ class ProxyAwareWritableFileSystemStorage extends WritableFileSystemStorage impl
         $browser = new Browser();
         $browser->setRequestEngine($curlEngine);
 
+        $subDirectory = $resourceProxyConfiguration['subDirectory'] ?? '_Resources/Persistent/';
         $subdivideHashPathSegment = $resourceProxyConfiguration['subdivideHashPathSegment'] ?? false;
         if ($subdivideHashPathSegment) {
             $sha1Hash = $resource->getSha1();
-            $uri = $resourceProxyConfiguration['baseUri'] . '/_Resources/Persistent/' . $sha1Hash[0] . '/' . $sha1Hash[1] . '/' . $sha1Hash[2] . '/' . $sha1Hash[3] . '/' . $sha1Hash . '/' . rawurlencode($resource->getFilename());
+            $uri = $resourceProxyConfiguration['baseUri'] . '/' . $subDirectory . $sha1Hash[0] . '/' . $sha1Hash[1] . '/' . $sha1Hash[2] . '/' . $sha1Hash[3] . '/' . $sha1Hash . '/' . rawurlencode($resource->getFilename());
         } else {
-            $uri = $resourceProxyConfiguration['baseUri'] . '/_Resources/Persistent/' . $resource->getSha1() . '/' . rawurlencode($resource->getFilename());
+            $uri = $resourceProxyConfiguration['baseUri'] . '/' . $subDirectory . $resource->getSha1() . '/' . rawurlencode($resource->getFilename());
         }
 
         $response = $browser->request($uri);
