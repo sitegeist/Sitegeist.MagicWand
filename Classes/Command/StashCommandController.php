@@ -71,6 +71,7 @@ class StashCommandController extends AbstractCommandController
         $this->renderHeadLine('Write Manifest');
         $presetName = $this->configurationService->getCurrentPreset();
         $presetConfiguration = $this->configurationService->getCurrentConfiguration();
+        $remoteDumpCommand = $presetConfiguration['dumpCommand'] ?? null;
         $cloneTimestamp = $this->configurationService->getMostRecentCloneTimeStamp();
         $stashTimestamp = time();
 
@@ -96,7 +97,8 @@ class StashCommandController extends AbstractCommandController
                 (int)$this->databaseConfiguration['port'],
                 $this->databaseConfiguration['user'],
                 $this->databaseConfiguration['password'],
-                $this->databaseConfiguration['dbname']
+                $this->databaseConfiguration['dbname'],
+                $remoteDumpCommand
             ) . ' > ' . $databaseDestination
         );
 

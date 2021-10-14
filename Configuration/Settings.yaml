@@ -31,6 +31,9 @@ Sitegeist:
 #        # default is the main flowCommand-Setting
 #        flowCommand: ~
 #
+#        # the custom remote dump command, defaults to mysqldump or pg_dump
+#        dumpCommand: ~
+#
 #        # options to adjust the clone process
 #        clone:
 #          # Optionally skip the publish step

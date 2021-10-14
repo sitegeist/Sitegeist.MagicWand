@@ -104,6 +104,7 @@ class CloneCommandController extends AbstractCommandController
                     $yes,
                     $keepDb,
                     $configuration['flowCommand'] ?? null,
+                    $configuration['dumpCommand'] ?? null,
                     $configuration['sshOptions'] ?? ''
                 );
             } else {
@@ -128,7 +129,8 @@ class CloneCommandController extends AbstractCommandController
      * @param null $postClone command or array of commands to be executed after cloning
      * @param boolean $yes confirm execution without further input
      * @param boolean $keepDb skip dropping of database during sync
-     * @param null $remoteFlowCommand the flow command to execute on the remote system
+     * @param string|null $remoteFlowCommand the flow command to execute on the remote system
+     * @param string|null $remoteDumpCommand the dump command to execute on the remote system
      * @param string $sshOptions additional options for the ssh command
      * @throws StopCommandException
      * @throws StopActionException
@@ -144,6 +146,7 @@ class CloneCommandController extends AbstractCommandController
         $yes = false,
         $keepDb = false,
         $remoteFlowCommand = null,
+        $remoteDumpCommand = null,
         $sshOptions = ''
     )
     {
@@ -283,6 +286,7 @@ class CloneCommandController extends AbstractCommandController
                     $remotePersistenceConfiguration['user'],
                     escapeshellcmd($remotePersistenceConfiguration['password']),
                     $remotePersistenceConfiguration['dbname'],
+                    $remoteDumpCommand,
                     $tableContentToSkip
                 ),
                 $this->dbal->buildCmd(
@@ -311,6 +315,7 @@ class CloneCommandController extends AbstractCommandController
                         $remotePersistenceConfiguration['user'],
                         escapeshellcmd($remotePersistenceConfiguration['password']),
                         $remotePersistenceConfiguration['dbname'],
+                        $remoteDumpCommand,
                         $tableContentToSkip
                     ),
                     $this->dbal->buildCmd(
