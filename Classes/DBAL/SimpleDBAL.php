@@ -36,11 +36,20 @@ class SimpleDBAL
      * @param string $username
      * @param string $password
      * @param string $database
+     * @param string|null $dumpCommand
      * @param array $excludeTables
      * @return string
      */
-    public function buildDataDumpCmd(string $driver, ?string $host, int $port, string $username, string $password, string $database, array $excludeTables = []): string
-    {
+    public function buildDataDumpCmd(
+        string $driver,
+        ?string $host,
+        int $port,
+        string $username,
+        string $password,
+        string $database,
+        ?string $dumpCommand = null,
+        array $excludeTables = []
+    ): string {
         $buildExcludeTableParameters = static function (string $parameterName) use ($excludeTables, $database) {
             return implode(' ', array_map(static function (string $excludeTable) use ($parameterName, $database) {
                 return sprintf('%s %s.%s', $parameterName, $database, $excludeTable);
@@ -48,9 +57,9 @@ class SimpleDBAL
         };
 
         if ($driver === 'pdo_mysql') {
-            return sprintf('mysqldump --single-transaction --add-drop-table --no-tablespaces --host=%s --port=%s --user=%s --password=%s %s %s', escapeshellarg($host), escapeshellarg($port), escapeshellarg($username), escapeshellarg($password), $buildExcludeTableParameters('--ignore-table'), escapeshellarg($database));
+            return sprintf(($dumpCommand ?: 'mysqldump') . ' --single-transaction --add-drop-table --no-tablespaces --host=%s --port=%s --user=%s --password=%s %s %s', escapeshellarg($host), escapeshellarg($port), escapeshellarg($username), escapeshellarg($password), $buildExcludeTableParameters('--ignore-table'), escapeshellarg($database));
         } else if ($driver === 'pdo_pgsql') {
-            return sprintf('PGPASSWORD=%s pg_dump --host=%s --port=%s --username=%s  %s --dbname=%s --schema=public --no-owner --no-privileges', escapeshellarg($password), escapeshellarg($host), escapeshellarg($port), escapeshellarg($username), $buildExcludeTableParameters('--exclude-table'), escapeshellarg($database));
+            return sprintf('PGPASSWORD=%s ' . ($dumpCommand ?: 'pg_dump') . ' --host=%s --port=%s --username=%s  %s --dbname=%s --schema=public --no-owner --no-privileges', escapeshellarg($password), escapeshellarg($host), escapeshellarg($port), escapeshellarg($username), $buildExcludeTableParameters('--exclude-table'), escapeshellarg($database));
         }
     }
 
@@ -61,11 +70,20 @@ class SimpleDBAL
      * @param string $username
      * @param string $password
      * @param string $database
+     * @param ?string $dumpCommand
      * @param array $tables
      * @return string
      */
-    public function buildSchemaDumpCmd(string $driver, ?string $host, int $port, string $username, string $password, string $database, array $tables = []): string
-    {
+    public function buildSchemaDumpCmd(
+        string $driver,
+        ?string $host,
+        int $port,
+        string $username,
+        string $password,
+        string $database,
+        ?string $dumpCommand = null,
+        array $tables = []
+    ): string {
         $buildOnlyTableParameters = static function (string $parameterName = '') use ($tables) {
             return implode(' ', array_map(static function (string $table) use ($parameterName) {
                 return trim($parameterName . ' ' . $table);
@@ -73,9 +91,9 @@ class SimpleDBAL
         };
 
         if ($driver === 'pdo_mysql') {
-            return sprintf('mysqldump --single-transaction --add-drop-table --no-tablespaces --no-data --host=%s --port=%s --user=%s --password=%s %s %s', escapeshellarg($host), escapeshellarg($port), escapeshellarg($username), escapeshellarg($password), escapeshellarg($database), $buildOnlyTableParameters());
+            return sprintf(($dumpCommand ?: 'mysqldump') . ' --single-transaction --add-drop-table --no-tablespaces --no-data --host=%s --port=%s --user=%s --password=%s %s %s', escapeshellarg($host), escapeshellarg($port), escapeshellarg($username), escapeshellarg($password), escapeshellarg($database), $buildOnlyTableParameters());
         } else if ($driver === 'pdo_pgsql') {
-            return sprintf('PGPASSWORD=%s pg_dump --host=%s --port=%s --username=%s --dbname=%s --schema=public --no-owner --no-privileges --schema-only %s', escapeshellarg($password), escapeshellarg($host), escapeshellarg($port), escapeshellarg($username), escapeshellarg($database), $buildOnlyTableParameters('-t'));
+            return sprintf('PGPASSWORD=%s ' . ($dumpCommand ?: 'pg_dump') . ' --host=%s --port=%s --username=%s --dbname=%s --schema=public --no-owner --no-privileges --schema-only %s', escapeshellarg($password), escapeshellarg($host), escapeshellarg($port), escapeshellarg($username), escapeshellarg($database), $buildOnlyTableParameters('-t'));
         }
     }
 
