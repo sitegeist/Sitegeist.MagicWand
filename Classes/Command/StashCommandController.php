@@ -370,7 +370,7 @@ class StashCommandController extends AbstractCommandController
 
         $this->renderHeadLine('Restore Persistent Resources');
         $this->executeLocalShellCommand(
-            'rm -rf %s && cp -al %s %1$s',
+            'rm -rf %s/* && cp -al %s/* %1$s',
             [
                 FLOW_PATH_ROOT . 'Data/Persistent',
                 $source . '/persistent'
