@@ -72,5 +72,4 @@ Neos:
 
     mvc:
       routes:
-        Sitegeist.MagicWand:
-          position: 'before Neos.Neos'
+        Sitegeist.MagicWand: true
