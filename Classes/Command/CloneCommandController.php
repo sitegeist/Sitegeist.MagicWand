@@ -181,6 +181,9 @@ class CloneCommandController extends AbstractCommandController
 
         if ($remotePersistenceConfigurationYaml) {
             $remotePersistenceConfiguration = Yaml::parse($remotePersistenceConfigurationYaml);
+        } else {
+            $this->renderLine("<error>The remote configuration for %s@%s could not be read. Please check the configuration and ensure the correct ssh key was added.</error>", [$user, $host]);
+            $this->quit(1);
         }
         $remoteDataPersistentPath = $path . '/Data/Persistent';
 
