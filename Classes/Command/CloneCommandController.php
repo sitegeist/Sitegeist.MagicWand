@@ -11,7 +11,11 @@ use Neos\Flow\Cli\Exception\StopCommandException;
 use Neos\Flow\Mvc\Exception\StopActionException;
 use Neos\Utility\Arrays;
 use Neos\Flow\Core\Bootstrap;
+use RenokiCo\PhpK8s\Kinds\K8sDeployment;
+use RenokiCo\PhpK8s\Kinds\K8sPod;
+use RenokiCo\PhpK8s\KubernetesCluster;
 use Sitegeist\MagicWand\DBAL\SimpleDBAL;
+use Sitegeist\MagicWand\Helper\KubernetesHelper;
 use Symfony\Component\Yaml\Yaml;
 
 /**
@@ -93,20 +97,44 @@ class CloneCommandController extends AbstractCommandController
                 $configuration = $this->configurationService->getCurrentConfiguration();
 
                 $this->renderLine('Clone by preset ' . $presetName);
-                $this->cloneRemoteHost(
-                    $configuration['host'],
-                    $configuration['user'],
-                    $configuration['port'],
-                    $configuration['path'],
-                    $configuration['context'],
-                    $configuration['clone'] ?? null,
-                    $configuration['postClone'] ?? null,
-                    $yes,
-                    $keepDb,
-                    $configuration['flowCommand'] ?? null,
-                    $configuration['dumpCommand'] ?? null,
-                    $configuration['sshOptions'] ?? ''
-                );
+
+                if (!empty($configuration['k8sConfigFile'])) {
+
+                    if (!isset($configuration['resourceProxy'])) {
+                       $this->outputLine('<error>Kubernetes clone does not support Resource-Download. You have to use ResourceProxy instead!</error>');
+                       $this->quit(1);
+                    }
+                    $this->cloneKubernetesHost(
+                        $configuration['k8sConfigFile'],
+                        $configuration['k8sContextName'],
+                        $configuration['k8sNamespace'],
+                        $configuration['k8sPodLabelSelector'],
+                        $configuration['k8sContainerName'],
+                        $configuration['path'],
+                        $configuration['context'],
+                        $configuration['clone'] ?? null,
+                        $configuration['postClone'] ?? null,
+                        $yes,
+                        $keepDb,
+                        $configuration['flowCommand'] ?? null,
+                        $configuration['dumpCommand'] ?? null,
+                    );
+                } else {
+                    $this->cloneRemoteHost(
+                        $configuration['host'],
+                        $configuration['user'],
+                        $configuration['port'],
+                        $configuration['path'],
+                        $configuration['context'],
+                        $configuration['clone'] ?? null,
+                        $configuration['postClone'] ?? null,
+                        $yes,
+                        $keepDb,
+                        $configuration['flowCommand'] ?? null,
+                        $configuration['dumpCommand'] ?? null,
+                        $configuration['sshOptions'] ?? ''
+                    );
+                }
             } else {
                 $this->renderLine('The preset ' . $presetName . ' was not found!');
                 $this->quit(1);
@@ -179,12 +207,8 @@ class CloneCommandController extends AbstractCommandController
             ]
         );
 
-        if ($remotePersistenceConfigurationYaml) {
-            $remotePersistenceConfiguration = Yaml::parse($remotePersistenceConfigurationYaml);
-        } else {
-            $this->renderLine("<error>The remote configuration for %s@%s could not be read. Please check the configuration and ensure the correct ssh key was added.</error>", [$user, $host]);
-            $this->quit(1);
-        }
+        $remotePersistenceConfiguration = $this->getConfigurationFromYaml($remotePersistenceConfigurationYaml);
+
         $remoteDataPersistentPath = $path . '/Data/Persistent';
 
         #################
@@ -192,16 +216,7 @@ class CloneCommandController extends AbstractCommandController
         #################
 
         if (!$yes) {
-            $this->renderLine("Are you sure you want to do this?  Type 'yes' to continue: ");
-            $handle = fopen("php://stdin", "r");
-            $line = fgets($handle);
-            if (trim($line) != 'yes') {
-                $this->renderLine('exit');
-                $this->quit(1);
-            } else {
-                $this->renderLine();
-                $this->renderLine();
-            }
+            $this->requestConfirmation();
         }
 
         ######################
@@ -246,24 +261,7 @@ class CloneCommandController extends AbstractCommandController
         ########################
 
         if ($keepDb == false) {
-            $this->renderHeadLine('Drop and Recreate DB');
-
-            $emptyLocalDbSql = $this->dbal->flushDbSql($this->databaseConfiguration['driver'], $this->databaseConfiguration['dbname']);
-
-            $this->executeLocalShellCommand(
-                'echo %s | %s',
-                [
-                    escapeshellarg($emptyLocalDbSql),
-                    $this->dbal->buildCmd(
-                        $this->databaseConfiguration['driver'],
-                        $this->databaseConfiguration['host'],
-                        (int)$this->databaseConfiguration['port'],
-                        $this->databaseConfiguration['user'],
-                        $this->databaseConfiguration['password'],
-                        $this->databaseConfiguration['dbname']
-                    )
-                ]
-            );
+            $this->recreateLocalDatabase();
         } else {
             $this->renderHeadLine('Skipped (Drop and Recreate DB)');
         }
@@ -403,35 +401,10 @@ class CloneCommandController extends AbstractCommandController
             );
         }
 
-        ################
-        # Clear Caches #
-        ################
+        $this->clearCaches();
+        $this->migrateLocalDb($remotePersistenceConfiguration);
+        $this->publishResources();
 
-        $this->renderHeadLine('Clear Caches');
-        $this->executeLocalFlowCommand('flow:cache:flush');
-
-        ##################
-        # Set DB charset #
-        ##################
-        if ($this->databaseConfiguration['driver'] == 'pdo_mysql' && $remotePersistenceConfiguration['charset'] != 'utf8mb4') {
-            $this->renderHeadLine('Set DB charset');
-            $this->executeLocalFlowCommand('database:setcharset');
-        }
-
-        ##############
-        # Migrate DB #
-        ##############
-
-        $this->renderHeadLine('Migrate cloned DB');
-        $this->executeLocalFlowCommand('doctrine:migrate');
-
-        #####################
-        # Publish Resources #
-        #####################
-        if (!($clone['skipResourcePublishStep'] ?? false)) {
-            $this->renderHeadLine('Publish Resources');
-            $this->executeLocalFlowCommand('resource:publish');
-        }
 
         ##############
         # Post Clone #
@@ -459,6 +432,161 @@ class CloneCommandController extends AbstractCommandController
         $this->renderLine('Successfully cloned in %s seconds', [$duration]);
     }
 
+    protected function cloneKubernetesHost(
+        $k8sConfigFile,
+        $k8sContextName,
+        $k8sNamespace,
+        $k8sPodLabelSelector,
+        $k8sContainerName,
+        $path,
+        $context = 'Production',
+        $clone = null,
+        $postClone = null,
+        $yes = false,
+        $keepDb = false,
+        $remoteFlowCommand = null,
+        $remoteDumpCommand = null
+    ) {
+
+        if ($remoteFlowCommand === null) {
+            $remoteFlowCommand = $this->flowCommand;
+        }
+
+        $pod = KubernetesHelper::getPod(
+            $k8sConfigFile,
+            $k8sContextName,
+            $k8sNamespace,
+            $k8sPodLabelSelector
+        );
+
+
+        //Fetch configuration from Pod
+        /** @var array $execResponse */
+        $execResponse = $pod->exec([
+            '/bin/bash', '-c',
+            'cd ' . $path .' && FLOW_CONTEXT=' . $context . ' ' . $remoteFlowCommand . ' configuration:show --type Settings --path Neos.Flow.persistence.backendOptions'
+        ], $k8sContainerName);
+
+        $remotePersistenceConfiguration = $this->getConfigurationFromYaml(last($execResponse)['output']);
+
+        //Request confirmation
+        if (!$yes) {
+            $this->requestConfirmation();
+        }
+
+        $startTimestamp = time();
+
+        $this->addSecret($this->databaseConfiguration['user']);
+        $this->addSecret($this->databaseConfiguration['password']);
+        $this->addSecret(escapeshellcmd($this->databaseConfiguration['password']));
+        $this->addSecret(escapeshellarg(escapeshellcmd($this->databaseConfiguration['password'])));
+        $this->addSecret($remotePersistenceConfiguration['user']);
+        $this->addSecret($remotePersistenceConfiguration['password']);
+        $this->addSecret(escapeshellcmd($remotePersistenceConfiguration['password']));
+        $this->addSecret(escapeshellarg(escapeshellcmd($remotePersistenceConfiguration['password'])));
+
+
+        $this->checkConfiguration($remotePersistenceConfiguration);
+
+        if (!isset($remotePersistenceConfiguration['port'])) {
+            $remotePersistenceConfiguration['port'] = $this->dbal->getDefaultPort($remotePersistenceConfiguration['driver']);
+        }
+
+        if (!isset($this->databaseConfiguration['port'])) {
+            $this->databaseConfiguration['port'] = $this->dbal->getDefaultPort($this->databaseConfiguration['driver']);
+        }
+
+        //Reset Database
+        if ($keepDb == false) {
+            $this->recreateLocalDatabase();
+        } else {
+            $this->renderHeadLine('Skipped (Drop and Recreate DB)');
+        }
+
+
+        ######################
+        #  Transfer Database #
+        ######################
+
+        $tableContentToSkip = $clone['database']['excludeTableContent'] ?? [];
+        $this->renderHeadLine('Transfer Database');
+
+        $dumpFilePath = KubernetesHelper::downloadDataDump(
+            $pod,
+            $k8sContainerName,
+            $this->dbal,
+            $remotePersistenceConfiguration,
+            $remoteDumpCommand,
+            $tableContentToSkip
+        );
+
+
+        $importCmd = $this->dbal->buildCmd(
+            $this->databaseConfiguration['driver'],
+            $this->databaseConfiguration['host'],
+            (int)$this->databaseConfiguration['port'],
+            $this->databaseConfiguration['user'],
+            $this->databaseConfiguration['password'],
+            $this->databaseConfiguration['dbname']
+        ) . ' < ' . $dumpFilePath;
+
+        $this->executeLocalShellCommand($importCmd);
+        unlink($dumpFilePath);
+
+
+        if (count($tableContentToSkip) > 0) {
+
+            KubernetesHelper::downloadSchemaDump(
+                $pod,
+                $k8sContainerName,
+                $this->dbal,
+                $remotePersistenceConfiguration,
+                $remoteDumpCommand,
+                $tableContentToSkip
+            );
+
+            $importCmd = $this->dbal->buildCmd(
+                    $this->databaseConfiguration['driver'],
+                    $this->databaseConfiguration['host'],
+                    (int)$this->databaseConfiguration['port'],
+                    $this->databaseConfiguration['user'],
+                    $this->databaseConfiguration['password'],
+                    $this->databaseConfiguration['dbname']
+                ) . ' < ' . $dumpFilePath;
+
+            $this->executeLocalShellCommand($importCmd);
+            unlink($dumpFilePath);
+        }
+
+        //Cleanup
+        $this->clearCaches();
+        $this->migrateLocalDb($remotePersistenceConfiguration);
+
+        if (!($clone['skipResourcePublishStep'] ?? false)) {
+            $this->publishResources();
+        }
+
+
+        //Post clone command
+        if ($postClone) {
+            $this->renderHeadLine('Execute post_clone commands');
+            if (is_array($postClone)) {
+                foreach ($postClone as $postCloneCommand) {
+                    $this->executeLocalShellCommandWithFlowContext($postCloneCommand);
+                }
+            } else {
+                $this->executeLocalShellCommandWithFlowContext($postClone);
+            }
+        }
+
+        $endTimestamp = time();
+        $duration = $endTimestamp - $startTimestamp;
+
+        $this->renderHeadLine('Done');
+        $this->renderLine('Successfully cloned in %s seconds', [$duration]);
+
+    }
+
     /**
      * @param $remotePersistenceConfiguration
      * @param $this ->databaseConfiguration
@@ -483,5 +611,96 @@ class CloneCommandController extends AbstractCommandController
             $this->quit(1);
         }
         $this->renderLine(' - Configuration seems ok ...');
+    }
+
+
+    /**
+     * @param string $configurationYaml
+     * @return mixed|void
+     * @throws StopCommandException
+     */
+    protected function getConfigurationFromYaml(string $configurationYaml) {
+        if (!empty($configurationYaml)) {
+            return Yaml::parse($configurationYaml);
+        } else {
+            $this->renderLine("<error>The remote configuration for %s@%s could not be read. Please check the configuration and ensure the correct ssh key was added.</error>", [$user, $host]);
+            $this->quit(1);
+        }
+    }
+
+    /**
+     * @return void
+     * @throws StopCommandException
+     */
+    protected function requestConfirmation() : void
+    {
+        $this->renderLine("Are you sure you want to do this?  Type 'yes' to continue: ");
+        $handle = fopen("php://stdin", "r");
+        $line = fgets($handle);
+        if (trim($line) != 'yes') {
+            $this->renderLine('exit');
+            $this->quit(1);
+        } else {
+            $this->renderLine();
+            $this->renderLine();
+        }
+    }
+
+    /**
+     * @return void
+     */
+    protected function recreateLocalDatabase()
+    {
+        $this->renderHeadLine('Drop and Recreate DB');
+
+        $emptyLocalDbSql = $this->dbal->flushDbSql($this->databaseConfiguration['driver'], $this->databaseConfiguration['dbname']);
+
+        $this->executeLocalShellCommand(
+            'echo %s | %s',
+            [
+                escapeshellarg($emptyLocalDbSql),
+                $this->dbal->buildCmd(
+                    $this->databaseConfiguration['driver'],
+                    $this->databaseConfiguration['host'],
+                    (int)$this->databaseConfiguration['port'],
+                    $this->databaseConfiguration['user'],
+                    $this->databaseConfiguration['password'],
+                    $this->databaseConfiguration['dbname']
+                )
+            ]
+        );
+    }
+
+    /**
+     * @return void
+     */
+    protected function clearCaches() : void
+    {
+        $this->renderHeadLine('Clear Caches');
+        $this->executeLocalFlowCommand('flow:cache:flush');
+    }
+
+    /**
+     * @param array $remotePersistenceConfiguration
+     * @return void
+     */
+    protected function migrateLocalDb(array $remotePersistenceConfiguration): void
+    {
+        if ($this->databaseConfiguration['driver'] == 'pdo_mysql' && $remotePersistenceConfiguration['charset'] != 'utf8mb4') {
+            $this->renderHeadLine('Set DB charset');
+            $this->executeLocalFlowCommand('database:setcharset');
+        }
+
+        $this->renderHeadLine('Migrate cloned DB');
+        $this->executeLocalFlowCommand('doctrine:migrate');
+    }
+
+    /**
+     * @return void
+     */
+    protected function publishResources() : void
+    {
+        $this->renderHeadLine('Publish Resources');
+        $this->executeLocalFlowCommand('resource:publish');
     }
 }
