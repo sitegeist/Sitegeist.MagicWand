@@ -16,6 +16,7 @@
         }
     ],
     "require": {
+        "ext-yaml": "*",
         "neos/flow": "^7.0 || ^8.0 || dev-master"
     },
     "autoload": {
