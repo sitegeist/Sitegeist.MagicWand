@@ -81,7 +81,7 @@ class KubernetesHelper {
                 $remotePersistenceConfiguration['host'],
                 (int)$remotePersistenceConfiguration['port'],
                 $remotePersistenceConfiguration['user'],
-                escapeshellcmd($remotePersistenceConfiguration['password']),
+                $remotePersistenceConfiguration['password'],
                 $remotePersistenceConfiguration['dbname'],
                 $remoteDumpCommand,
                 $tableContentToSkip
@@ -127,7 +127,7 @@ class KubernetesHelper {
                 $remotePersistenceConfiguration['host'],
                 (int)$remotePersistenceConfiguration['port'],
                 $remotePersistenceConfiguration['user'],
-                escapeshellcmd($remotePersistenceConfiguration['password']),
+                $remotePersistenceConfiguration['password'],
                 $remotePersistenceConfiguration['dbname'],
                 $remoteDumpCommand,
                 $tableContentToSkip
