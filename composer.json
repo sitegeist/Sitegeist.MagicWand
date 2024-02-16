@@ -16,7 +16,9 @@
         }
     ],
     "require": {
-        "neos/flow": "^7.0 || ^8.0 || ^9.0 || dev-master"
+        "ext-yaml": "*",
+        "neos/flow": "^7.0 || ^8.0 || ^9.0 || dev-master",
+        "renoki-co/php-k8s": "^3.8.1"
     },
     "autoload": {
         "psr-4": {

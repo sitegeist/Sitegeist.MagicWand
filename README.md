@@ -88,6 +88,28 @@ Sitegeist:
 The settings should be added to the global `Settings.yaml` of the project, so that every
 developer with SSH-access to the remote server can easily clone the setup.
 
+### Settings.yaml for clone from Kubernetes-Deployments
+Resources are not synchronized with a Kubernetes clone. This is the case, to make it compatible with infrastructures, where you don't have direct SSH-access into the container. (Only K8S API is used here). 
+In addition, outgoing traffic in Kubernetes clusters is usually subject to a charge, which also saves money. By using the resource proxy, however, this is not a problem and only the resources that are actually required are downloaded.
+
+Here is an example-config for Kubernetes-clone: 
+```yaml
+Sitegeist:
+  MagicWand:
+    clonePresets:
+      'CustomName':
+        k8sConfigFile: '/path/to/kubeconfig'
+        k8sContextName: 'cluster-user@cluster-name'
+        k8sNamespace: 'namespace-name'
+        k8sPodLabelSelector: 'app=xyz'
+        k8sContainerName: 'neos'
+        path: '/app'
+        context: 'Production'
+        resourceProxy:
+          baseUri: https://www.domain.tld
+          subDirectory: '_Resources/Persistent/'
+```
+
 ## Quick backup and restore mechanisms for persistent data
 
 Sometimes it's useful to quickly backup an integral persistent state of an application, to then perform some risky
