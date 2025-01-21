@@ -342,7 +342,7 @@ class CloneCommandController extends AbstractCommandController
         if (!$resourceProxyConfiguration) {
             $this->renderHeadLine('Transfer Files');
             $this->executeLocalShellCommand(
-                'rsync -e "ssh -p %s %s" -kLr %s@%s:%s/* %s',
+                'rsync -e "ssh -p %s %s" -kLr %s@%s:"%s/*" %s',
                 [
                     $port,
                     addslashes($sshOptions),
@@ -355,7 +355,7 @@ class CloneCommandController extends AbstractCommandController
         } else {
             $this->renderHeadLine('Transfer Files - without Resources because a resourceProxyConfiguration is found');
             $this->executeLocalShellCommand(
-                'rsync -e "ssh -p %s %s" --exclude "Resources/*" -kLr %s@%s:%s/* %s',
+                'rsync -e "ssh -p %s %s" --exclude "Resources/*" -kLr %s@%s:"%s/*" %s',
                 [
                     $port,
                     addslashes($sshOptions),
@@ -391,7 +391,7 @@ class CloneCommandController extends AbstractCommandController
 
         if ($translationsAvailable === 'true') {
             $this->executeLocalShellCommand(
-                'rsync -e "ssh -p %s %s" -kLr %s@%s:%s/* %s',
+                'rsync -e "ssh -p %s %s" -kLr %s@%s:"%s/*" %s',
                 [
                     $port,
                     addslashes($sshOptions),
