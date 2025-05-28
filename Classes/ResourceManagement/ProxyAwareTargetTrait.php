@@ -28,10 +28,10 @@ trait ProxyAwareTargetTrait
 
     /**
      * @param CollectionInterface $collection The collection to publish
-     * @param callable $callback Function called after each resource publishing
+     * @param callable|null $callback Function called after each resource publishing
      * @return void
      */
-    public function publishCollection(CollectionInterface $collection, callable $callback = null)
+    public function publishCollection(CollectionInterface $collection, ?callable $callback = null)
     {
         if (!$this->configurationService->getCurrentConfigurationByPath('resourceProxy')) {
             parent::publishCollection($collection, $callback);
