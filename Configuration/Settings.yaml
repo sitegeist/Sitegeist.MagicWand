@@ -3,6 +3,9 @@ Sitegeist:
 
     # the local flow command
     flowCommand: './flow'
+    # the custom local database command, defaults to mysql or psql
+#    databaseCommand: ~
+
 #   # preset which is used by the clone:default command
 #   defaultPreset: 'master'
 #    clonePresets: []

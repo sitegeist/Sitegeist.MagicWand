@@ -45,6 +45,12 @@ abstract class AbstractCommandController extends CommandController
     protected $flowCommand;
 
     /**
+     * @var string
+     * @Flow\InjectConfiguration("databaseCommand")
+     */
+    protected $databaseCommand;
+
+    /**
      * @Flow\Inject
      * @var ConfigurationService
      */

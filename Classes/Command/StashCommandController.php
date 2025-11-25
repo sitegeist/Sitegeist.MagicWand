@@ -340,7 +340,8 @@ class StashCommandController extends AbstractCommandController
                         (int)$this->databaseConfiguration['port'],
                         $this->databaseConfiguration['user'],
                         $this->databaseConfiguration['password'],
-                        $this->databaseConfiguration['dbname']
+                        $this->databaseConfiguration['dbname'],
+                        $this->databaseCommand
                     )
                 ]
             );
@@ -362,7 +363,8 @@ class StashCommandController extends AbstractCommandController
                 (int)$this->databaseConfiguration['port'],
                 $this->databaseConfiguration['user'],
                 $this->databaseConfiguration['password'],
-                $this->databaseConfiguration['dbname']
+                $this->databaseConfiguration['dbname'],
+                $this->databaseCommand
             ) . ' < ' . $source . '/database.sql'
         );
 
