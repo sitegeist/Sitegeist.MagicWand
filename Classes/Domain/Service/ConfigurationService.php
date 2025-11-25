@@ -1,9 +1,12 @@
 <?php
+
 namespace Sitegeist\MagicWand\Domain\Service;
 
 use Neos\Flow\Annotations as Flow;
 use Neos\Cache\Frontend\VariableFrontend;
+use Neos\Flow\Log\Utility\LogEnvironment;
 use Neos\Utility\Arrays;
+use Psr\Log\LoggerInterface;
 
 class ConfigurationService
 {
@@ -12,6 +15,9 @@ class ConfigurationService
      * @var VariableFrontend
      */
     protected $clonePresetInformationCache;
+
+    #[Flow\Inject]
+    protected LoggerInterface $logger;
 
     /**
      * @var string
@@ -26,7 +32,12 @@ class ConfigurationService
     {
         $clonePresetInformation = $this->clonePresetInformationCache->get('current');
 
-        if ($clonePresetInformation && is_array($clonePresetInformation) && isset($clonePresetInformation['presetName'])) {
+        if (!$clonePresetInformation || !is_array($clonePresetInformation)) {
+            $this->logger->warning('MagicWand did not find any preset information in the cache. Run the flow command "clone:preset" first to fill the clonePresetInformationCache.', LogEnvironment::fromMethodName(__METHOD__));
+            return null;
+        }
+
+        if (isset($clonePresetInformation['presetName'])) {
             return $clonePresetInformation['presetName'];
         }
 
@@ -67,7 +78,13 @@ class ConfigurationService
     public function getCurrentConfigurationByPath($path)
     {
         $currentConfiguration = $this->getCurrentConfiguration();
-        return Arrays::getValueByPath($currentConfiguration, $path);
+        $value = Arrays::getValueByPath($currentConfiguration, $path);
+
+        if ($value === null) {
+            $this->logger->warning(sprintf('Tried to get value at path "%s" from cached configuration with preset name "%s". But the path does not exists. Existing entries are "%s" ', $path, $this->getCurrentPreset(), json_encode($currentConfiguration)), LogEnvironment::fromMethodName(__METHOD__));
+        }
+
+        return $value;
     }
 
     /**
@@ -99,6 +116,8 @@ class ConfigurationService
             'presetName' => $presetName,
             'cloned_at' => time()
         ]);
+
+        $this->logger->info(sprintf('Set "%s" as current preset name to the cache', $presetName), LogEnvironment::fromMethodName(__METHOD__));
     }
 
     /**

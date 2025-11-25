@@ -111,6 +111,8 @@ class CloneCommandController extends AbstractCommandController
                 $this->renderLine('The preset ' . $presetName . ' was not found!');
                 $this->quit(1);
             }
+
+            $this->configurationService->setCurrentPreset($presetName);
         } else {
             $this->renderLine('No presets found!');
             $this->quit(1);

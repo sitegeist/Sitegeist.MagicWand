@@ -4,10 +4,12 @@ namespace Sitegeist\MagicWand\ResourceManagement;
 use Neos\Flow\Annotations as Flow;
 use Neos\Flow\Http\Client\Browser;
 use Neos\Flow\Http\Client\CurlEngine;
+use Neos\Flow\Log\Utility\LogEnvironment;
 use Neos\Flow\ResourceManagement\PersistentResource;
 use Neos\Flow\ResourceManagement\ResourceManager;
 use Neos\Flow\ResourceManagement\ResourceMetaDataInterface;
 use Neos\Flow\ResourceManagement\Storage\WritableFileSystemStorage;
+use Psr\Log\LoggerInterface;
 use Sitegeist\MagicWand\Domain\Service\ConfigurationService;
 use Neos\Utility\Files;
 
@@ -24,6 +26,9 @@ class ProxyAwareWritableFileSystemStorage extends WritableFileSystemStorage impl
      * @Flow\Inject
      */
     protected $resourceManager;
+
+    #[Flow\Inject]
+    protected LoggerInterface $logger;
 
     /**
      * @param ResourceMetaDataInterface $resource
@@ -47,6 +52,7 @@ class ProxyAwareWritableFileSystemStorage extends WritableFileSystemStorage impl
 
         $resourceProxyConfiguration = $this->configurationService->getCurrentConfigurationByPath('resourceProxy');
         if (!$resourceProxyConfiguration) {
+            $this->logger->warning('No resource proxy configuration was found. Falling back to WritableFileSystemStorage', LogEnvironment::fromMethodName(__METHOD__));
             return parent::getStreamByResource($resource);
         }
 
@@ -79,13 +85,19 @@ class ProxyAwareWritableFileSystemStorage extends WritableFileSystemStorage impl
         if ($response->getStatusCode() == 200) {
             $stream = $response->getBody()->detach();
             $targetPathAndFilename = $this->getStoragePathAndFilenameByHash($resource->getSha1());
+
             if (!file_exists(dirname($targetPathAndFilename))) {
                 Files::createDirectoryRecursively(dirname($targetPathAndFilename));
             }
+
             file_put_contents($targetPathAndFilename, stream_get_contents($stream));
             $this->fixFilePermissions($targetPathAndFilename);
             $target->publishResource($resource, $collection);
+
+            $this->logger->info(sprintf('Successfully downloaded asset "%s" from remote and published it to "%s"', $uri, $targetPathAndFilename), LogEnvironment::fromMethodName(__METHOD__));
             return $stream;
+        } else {
+            $this->logger->error(sprintf('Got status code %s while trying, to fetch asset from URL %s', $response->getStatusCode(), $uri), LogEnvironment::fromMethodName(__METHOD__));
         }
 
         throw new ResourceNotFoundException(
