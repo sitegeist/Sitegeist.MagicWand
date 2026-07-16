@@ -38,6 +38,9 @@ Sitegeist:
 #        clone:
 #          # Optionally skip the publish step
 #          skipResourcePublishStep: false
+#          # Optionally clone the remote Data/Logs directory as well (opt-in).
+#          # The transfer is additive (no deletion of local logs).
+#          syncLogs: false
 #          database:
 #            # List tables of which only the schema should be cloned without data. This can be used to exclude
 #            # large tables or tables containing confident conten

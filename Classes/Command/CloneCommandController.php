@@ -403,6 +403,46 @@ class CloneCommandController extends AbstractCommandController
             );
         }
 
+        #################
+        # Transfer Logs #
+        #################
+
+        // Optionally clone the remote Data/Logs directory (opt-in via clone.syncLogs).
+        // The transfer is purely additive (no --delete), so local logs are never removed.
+        if ($clone['syncLogs'] ?? false) {
+            $this->renderHeadLine('Transfer Logs');
+
+            $remoteDataLogsPath = $path . '/Data/Logs';
+            $localDataLogsPath = FLOW_PATH_ROOT . 'Data/Logs';
+
+            // If the logs directory is available print true - because we didn't get the return value here
+            $logsAvailable = trim(
+                $this->executeLocalShellCommand(
+                    'ssh -p %s %s %s@%s "[ -d %s ] && echo true"',
+                    [
+                        $port,
+                        $sshOptions,
+                        $user,
+                        $host,
+                        $remoteDataLogsPath]
+                )
+            );
+
+            if ($logsAvailable === 'true') {
+                $this->executeLocalShellCommand(
+                    'rsync -e "ssh -p %s %s" -kLr %s@%s:%s/* %s',
+                    [
+                        $port,
+                        addslashes($sshOptions),
+                        $user,
+                        $host,
+                        $remoteDataLogsPath,
+                        $localDataLogsPath
+                    ]
+                );
+            }
+        }
+
         ################
         # Clear Caches #
         ################

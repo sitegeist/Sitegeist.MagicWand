@@ -66,7 +66,10 @@ Sitegeist:
         flowCommand: ~
 
         # options to adjust the clone process
-        clone: []
+        clone:
+          # optionally clone the remote Data/Logs directory as well (opt-in, default false).
+          # the transfer is additive (no --delete), so local logs are never removed.
+          syncLogs: false
 
         # commands to execute after cloning like ./flow user:create ...
         postClone: []
