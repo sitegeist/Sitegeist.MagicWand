@@ -45,6 +45,10 @@ Sitegeist:
 #            # List tables of which only the schema should be cloned without data. This can be used to exclude
 #            # large tables or tables containing confident conten
 #            excludeTableContent: []
+#          files:
+#            # List directories inside /Data/Persistent that should be excluded from rsync
+#            # If you want to exclude the directory contents but not the directory itself, use 'dir1/*' instead of 'dir1'
+#            excludeDirectories: []
 #
 #
 #        # commands to execute after cloning

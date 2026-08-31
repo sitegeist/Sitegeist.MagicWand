@@ -342,10 +342,13 @@ class CloneCommandController extends AbstractCommandController
 
         $resourceProxyConfiguration = $this->configurationService->getCurrentConfigurationByPath('resourceProxy');
 
+        $excludeDirectories = is_array($clone['files']['excludeDirectories']) ? $clone['files']['excludeDirectories'] : [];
+        $excludeDirectories = implode(array_map(fn ($directory) => ' --exclude "'.$directory.'"', $excludeDirectories));
+
         if (!$resourceProxyConfiguration) {
             $this->renderHeadLine('Transfer Files');
             $this->executeLocalShellCommand(
-                'rsync -e "ssh -p %s %s" -kLr %s@%s:"%s/*" %s',
+                'rsync -e "ssh -p %s %s"' . $excludeDirectories . ' -kLr %s@%s:"%s/*" %s',
                 [
                     $port,
                     addslashes($sshOptions),
@@ -358,7 +361,7 @@ class CloneCommandController extends AbstractCommandController
         } else {
             $this->renderHeadLine('Transfer Files - without Resources because a resourceProxyConfiguration is found');
             $this->executeLocalShellCommand(
-                'rsync -e "ssh -p %s %s" --exclude "Resources/*" -kLr %s@%s:"%s/*" %s',
+                'rsync -e "ssh -p %s %s" --exclude "Resources/*"' . $excludeDirectories . ' -kLr %s@%s:"%s/*" %s',
                 [
                     $port,
                     addslashes($sshOptions),
