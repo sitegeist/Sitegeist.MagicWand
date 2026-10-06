@@ -84,6 +84,11 @@ trait ProxyAwareTargetTrait
             return parent::getPublicPersistentResourceUri($resource);
         }
 
+        // outside of http requests (cli) the uriBuilder has no request and uriFor() would fail
+        if ($this->uriBuilder->getRequest() === null) {
+            return parent::getPublicPersistentResourceUri($resource);
+        }
+
         // build uri to resource controller that will fetch and publish
         // the resource asynchronously
         return $this->uriBuilder->uriFor(
